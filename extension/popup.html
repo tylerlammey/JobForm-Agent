@@ -3,130 +3,216 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Job Autofiller</title>
+  <title>JobForm Agent</title>
   <link rel="stylesheet" href="popup.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="card">
-    <header class="header">
-      <div class="logo-container">
-        <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        <h1>Job Autofiller</h1>
+  <!-- Ambient liquid background orbs -->
+  <div class="ambient-glow orb-1"></div>
+  <div class="ambient-glow orb-2"></div>
+  <div class="ambient-glow orb-3"></div>
+
+  <div class="app-card">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-badge">
+          <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            <circle cx="12" cy="12" r="4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>JobForm Agent</h1>
+          <span class="version-tag">AI Autofill</span>
+        </div>
       </div>
-      <div class="status-container">
+      <div class="status-pill" id="backend-status-pill">
         <span class="status-dot disconnected" id="status-dot"></span>
-        <span class="status-text" id="status-text">Checking status...</span>
+        <span class="status-text" id="status-text">Checking...</span>
       </div>
     </header>
 
-    <div class="tabs-nav">
-      <button class="tab-btn active" id="tab-btn-main">Main Workspace</button>
-      <button class="tab-btn" id="tab-btn-debug">Debug Console</button>
-    </div>
+    <!-- Segmented Tab Navigation -->
+    <nav class="tabs-segmented">
+      <button class="tab-btn active" id="tab-btn-main">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>Workspace</span>
+      </button>
+      <button class="tab-btn" id="tab-btn-debug">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span>Debug Console</span>
+      </button>
+    </nav>
 
-    <main class="content">
-      <div id="tab-content-main" class="tab-content">
-        <!-- Resume Settings Section -->
-        <section class="section">
-          <h2>Resume Configuration</h2>
-          <div class="resume-box">
-            <div class="resume-status">
-              <span class="resume-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              </span>
+    <!-- Tab 1: Main Workspace -->
+    <main id="tab-content-main" class="tab-pane">
+      
+      <!-- Resume Card -->
+      <section class="glass-section resume-card">
+        <div class="section-label-row">
+          <span class="section-label">Candidate Resume</span>
+          <span class="glass-tag">Autofill Source</span>
+        </div>
+        <div class="resume-content">
+          <div class="resume-meta">
+            <div class="resume-avatar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div class="resume-info">
               <span id="resume-filename" class="resume-filename">No file selected</span>
-            </div>
-            <label for="resume-file" class="btn-resume-select">
-              <span>Choose File</span>
-              <input type="file" id="resume-file" accept=".pdf,.doc,.docx" class="hidden-file-input" />
-            </label>
-          </div>
-        </section>
-
-        <!-- Divider -->
-        <hr class="divider" />
-
-        <!-- Single Action Section -->
-        <section class="section">
-          <div class="btn-group">
-            <button id="btn-autofill" class="btn btn-primary btn-hero">
-              <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              <span id="btn-autofill-text">Autofill Application</span>
-              <div class="spinner" id="autofill-spinner"></div>
-            </button>
-          </div>
-
-          <div id="analysis-error" class="error-box hidden"></div>
-        </section>
-
-        <!-- Page Analysis & Applied Actions Section -->
-        <section id="results-section" class="section hidden">
-          <h2>Page & Results</h2>
-          <div id="analysis-data" class="analysis-box">
-            <div class="data-item">
-              <span class="data-label">URL:</span>
-              <span class="data-value truncate" id="info-url">-</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Title:</span>
-              <span class="data-value truncate" id="info-title">-</span>
-            </div>
-            <div class="grid-stats">
-              <div class="stat-badge">
-                <span class="stat-num" id="stat-inputs">0</span>
-                <span class="stat-label">Inputs</span>
-              </div>
-              <div class="stat-badge">
-                <span class="stat-num" id="stat-textareas">0</span>
-                <span class="stat-label">Textareas</span>
-              </div>
-              <div class="stat-badge">
-                <span class="stat-num" id="stat-selects">0</span>
-                <span class="stat-label">Selects</span>
-              </div>
-            </div>
-
-            <!-- Applied Actions Container -->
-            <div id="ai-plan-container" class="plan-container hidden">
-              <div class="plan-header">
-                <span>Applied Actions</span>
-                <span id="applied-count-badge" class="applied-badge">0 actions</span>
-              </div>
-              <div id="ai-plan-list" class="plan-list"></div>
-            </div>
-            
-            <!-- JSON Extracted Output area -->
-            <div id="analysis-json-container" class="json-container hidden">
-              <div class="json-header">
-                <span>Extracted Fields Payload</span>
-                <button id="btn-copy-json" class="btn-copy" title="Copy JSON">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  <span id="copy-status">Copy</span>
-                </button>
-              </div>
-              <pre id="analysis-json"></pre>
+              <span class="resume-hint">PDF or DOCX used for ATS file upload</span>
             </div>
           </div>
-        </section>
-      </div> <!-- end tab-content-main -->
+          <label for="resume-file" class="btn-glass-upload">
+            <span>Browse</span>
+            <input type="file" id="resume-file" accept=".pdf,.doc,.docx" class="hidden-file-input" />
+          </label>
+        </div>
+      </section>
 
-      <div id="tab-content-debug" class="tab-content hidden">
-        <section class="section">
-          <h2>API Debug Console</h2>
-          <div class="debug-pane">
-            <h3>Last Request Sent (Scanner Payload)</h3>
-            <pre id="debug-request-box" class="debug-code">No request sent yet. Run "Autofill Application".</pre>
+      <!-- Action & Progress Section -->
+      <section class="glass-section action-card">
+        <button id="btn-autofill" class="btn-liquid-hero">
+          <div class="hero-liquid-shine"></div>
+          <span class="hero-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </span>
+          <span id="btn-autofill-text" class="hero-text">Autofill Application</span>
+          <div class="spinner" id="autofill-spinner"></div>
+        </button>
+
+        <!-- Dynamic Liquid Progress Bar -->
+        <div id="progress-section" class="progress-container hidden">
+          <div class="progress-header">
+            <div class="progress-status-indicator">
+              <span class="progress-pulse-dot"></span>
+              <span id="progress-status-text" class="progress-status-text">Scanning page...</span>
+            </div>
+            <span id="progress-percent-badge" class="progress-percent">0%</span>
           </div>
-          <div class="debug-pane">
-            <h3>Last Response Received (AI Fill Plan)</h3>
-            <pre id="debug-response-box" class="debug-code">No response received yet.</pre>
+
+          <div class="progress-track">
+            <div id="progress-bar-fill" class="progress-fill" style="width: 0%;">
+              <div class="progress-shimmer"></div>
+            </div>
           </div>
-        </section>
-      </div>
+
+          <!-- Stepper checkpoints -->
+          <div class="stepper-row">
+            <div class="step-pill" id="step-scan">
+              <span class="step-dot"></span>
+              <span class="step-name">Scan Form</span>
+            </div>
+            <div class="step-line" id="line-1"></div>
+            <div class="step-pill" id="step-plan">
+              <span class="step-dot"></span>
+              <span class="step-name">AI Match</span>
+            </div>
+            <div class="step-line" id="line-2"></div>
+            <div class="step-pill" id="step-inject">
+              <span class="step-dot"></span>
+              <span class="step-name">Fill & Upload</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="analysis-error" class="glass-error-box hidden"></div>
+      </section>
+
+      <!-- Live Page & Applied Results -->
+      <section id="results-section" class="glass-section results-card hidden">
+        <div class="section-label-row">
+          <span class="section-label">Page Form Metrics</span>
+          <span id="stat-total-badge" class="glass-tag tag-success">0 fields mapped</span>
+        </div>
+
+        <div class="page-meta-row">
+          <div class="page-meta-item">
+            <span class="meta-label">Page:</span>
+            <span class="meta-val truncate" id="info-title">-</span>
+          </div>
+          <div class="page-meta-item">
+            <span class="meta-label">URL:</span>
+            <span class="meta-val truncate" id="info-url">-</span>
+          </div>
+        </div>
+
+        <div class="stats-capsules">
+          <div class="stat-capsule">
+            <span class="capsule-num" id="stat-inputs">0</span>
+            <span class="capsule-label">Inputs</span>
+          </div>
+          <div class="stat-capsule">
+            <span class="capsule-num" id="stat-selects">0</span>
+            <span class="capsule-label">Dropdowns</span>
+          </div>
+          <div class="stat-capsule">
+            <span class="capsule-num" id="stat-textareas">0</span>
+            <span class="capsule-label">Text Areas</span>
+          </div>
+        </div>
+
+        <!-- Applied AI Actions Plan -->
+        <div id="ai-plan-container" class="plan-wrapper hidden">
+          <div class="plan-heading">
+            <span>Executed Actions</span>
+            <span id="applied-count-badge" class="plan-badge">0 actions</span>
+          </div>
+          <div id="ai-plan-list" class="plan-items-scroll"></div>
+        </div>
+      </section>
+
     </main>
 
-    <footer class="footer">
-      <span>AI Autofiller v1.0</span>
+    <!-- Tab 2: Debug Console (Isolated) -->
+    <main id="tab-content-debug" class="tab-pane hidden">
+      <section class="glass-section debug-card">
+        <div class="debug-pane-header">
+          <div class="debug-title">
+            <span class="section-label">Scanned Form Fields Payload</span>
+            <span class="debug-sub">Raw structured payload extracted from active DOM frames</span>
+          </div>
+          <button id="btn-copy-json" class="btn-glass-copy" title="Copy JSON">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span id="copy-status">Copy JSON</span>
+          </button>
+        </div>
+        <div class="debug-code-box">
+          <pre id="analysis-json">No fields scanned yet. Run "Autofill Application" from Workspace.</pre>
+        </div>
+      </section>
+
+      <section class="glass-section debug-card">
+        <div class="debug-pane-header">
+          <div class="debug-title">
+            <span class="section-label">Last API Request (POST /api/fill-form)</span>
+          </div>
+        </div>
+        <div class="debug-code-box">
+          <pre id="debug-request-box">No request sent yet.</pre>
+        </div>
+      </section>
+
+      <section class="glass-section debug-card">
+        <div class="debug-pane-header">
+          <div class="debug-title">
+            <span class="section-label">Last API Response (FillPlan Actions)</span>
+          </div>
+        </div>
+        <div class="debug-code-box">
+          <pre id="debug-response-box">No response received yet.</pre>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-dot"></div>
+      <span>JobForm Agent v1.2 • Liquid Glass Edition</span>
     </footer>
   </div>
 

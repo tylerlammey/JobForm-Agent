@@ -1,18 +1,34 @@
-// Popup logic for Job Autofiller extension
+// Popup logic for JobForm Agent extension
 const BACKEND_URL = "http://localhost:8000";
 
+type ProgressStage = "idle" | "scanning" | "planning" | "injecting" | "complete" | "error";
+
 document.addEventListener("DOMContentLoaded", () => {
+  // Status Header
   const statusDot = document.getElementById("status-dot") as HTMLElement;
   const statusText = document.getElementById("status-text") as HTMLElement;
   
+  // Hero Button
   const btnAutofill = document.getElementById("btn-autofill") as HTMLButtonElement;
   const btnAutofillText = document.getElementById("btn-autofill-text") as HTMLElement;
   
+  // Progress Bar Components
+  const progressSection = document.getElementById("progress-section") as HTMLElement;
+  const progressBarFill = document.getElementById("progress-bar-fill") as HTMLElement;
+  const progressStatusText = document.getElementById("progress-status-text") as HTMLElement;
+  const progressPercentBadge = document.getElementById("progress-percent-badge") as HTMLElement;
+  const stepScan = document.getElementById("step-scan") as HTMLElement;
+  const stepPlan = document.getElementById("step-plan") as HTMLElement;
+  const stepInject = document.getElementById("step-inject") as HTMLElement;
+  const line1 = document.getElementById("line-1") as HTMLElement;
+  const line2 = document.getElementById("line-2") as HTMLElement;
+
+  // Results & Plan Section
   const resultsSection = document.getElementById("results-section") as HTMLElement;
-  const analysisData = document.getElementById("analysis-data") as HTMLElement;
   const aiPlanContainer = document.getElementById("ai-plan-container") as HTMLElement;
   const aiPlanList = document.getElementById("ai-plan-list") as HTMLElement;
   const appliedCountBadge = document.getElementById("applied-count-badge") as HTMLElement;
+  const statTotalBadge = document.getElementById("stat-total-badge") as HTMLElement;
 
   const infoUrl = document.getElementById("info-url") as HTMLElement;
   const infoTitle = document.getElementById("info-title") as HTMLElement;
@@ -21,13 +37,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const statSelects = document.getElementById("stat-selects") as HTMLElement;
   const analysisError = document.getElementById("analysis-error") as HTMLElement;
 
-  // JSON viewer elements
-  const analysisJsonContainer = document.getElementById("analysis-json-container") as HTMLElement;
+  // Debug Console Elements
   const analysisJson = document.getElementById("analysis-json") as HTMLElement;
   const btnCopyJson = document.getElementById("btn-copy-json") as HTMLButtonElement;
   const copyStatus = document.getElementById("copy-status") as HTMLElement;
+  const debugRequestBox = document.getElementById("debug-request-box") as HTMLElement;
+  const debugResponseBox = document.getElementById("debug-response-box") as HTMLElement;
 
-  // Resume Settings elements
+  // Resume Elements
   const resumeFileInput = document.getElementById("resume-file") as HTMLInputElement;
   const resumeFilename = document.getElementById("resume-filename") as HTMLElement;
 
@@ -37,15 +54,75 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabContentMain = document.getElementById("tab-content-main") as HTMLElement;
   const tabContentDebug = document.getElementById("tab-content-debug") as HTMLElement;
 
-  // Debug Console Box Elements
-  const debugRequestBox = document.getElementById("debug-request-box") as HTMLElement;
-  const debugResponseBox = document.getElementById("debug-response-box") as HTMLElement;
-
   let currentJsonPayload = "";
   let extractedFields: any[] = [];
   let generatedActionsPlan: any[] = [];
   let debugRequestPayload = "No request sent yet. Run \"Autofill Application\".";
   let debugResponsePayload = "No response received yet.";
+
+  /**
+   * Progress State Controller
+   */
+  function updateProgress(stage: ProgressStage, message?: string, percent?: number) {
+    if (stage === "idle") {
+      progressSection.classList.add("hidden");
+      progressBarFill.style.width = "0%";
+      stepScan.className = "step-pill";
+      stepPlan.className = "step-pill";
+      stepInject.className = "step-pill";
+      line1.className = "step-line";
+      line2.className = "step-line";
+      return;
+    }
+
+    progressSection.classList.remove("hidden");
+
+    if (stage === "scanning") {
+      const p = percent ?? 25;
+      progressBarFill.style.width = `${p}%`;
+      progressPercentBadge.innerText = `${p}%`;
+      progressStatusText.innerText = message || "Scanning form inputs...";
+      stepScan.className = "step-pill active";
+      stepPlan.className = "step-pill";
+      stepInject.className = "step-pill";
+      line1.className = "step-line";
+      line2.className = "step-line";
+    } else if (stage === "planning") {
+      const p = percent ?? 65;
+      progressBarFill.style.width = `${p}%`;
+      progressPercentBadge.innerText = `${p}%`;
+      progressStatusText.innerText = message || "Generating AI fill plan...";
+      stepScan.className = "step-pill completed";
+      line1.className = "step-line completed";
+      stepPlan.className = "step-pill active";
+      stepInject.className = "step-pill";
+      line2.className = "step-line";
+    } else if (stage === "injecting") {
+      const p = percent ?? 90;
+      progressBarFill.style.width = `${p}%`;
+      progressPercentBadge.innerText = `${p}%`;
+      progressStatusText.innerText = message || "Applying autofill actions...";
+      stepScan.className = "step-pill completed";
+      line1.className = "step-line completed";
+      stepPlan.className = "step-pill completed";
+      line2.className = "step-line completed";
+      stepInject.className = "step-pill active";
+    } else if (stage === "complete") {
+      progressBarFill.style.width = "100%";
+      progressPercentBadge.innerText = "100%";
+      progressStatusText.innerText = message || "Autofill completed successfully!";
+      stepScan.className = "step-pill completed";
+      line1.className = "step-line completed";
+      stepPlan.className = "step-pill completed";
+      line2.className = "step-line completed";
+      stepInject.className = "step-pill completed";
+    } else if (stage === "error") {
+      progressBarFill.style.width = "100%";
+      progressBarFill.style.background = "var(--liquid-rose)";
+      progressPercentBadge.innerText = "Error";
+      progressStatusText.innerText = message || "Process encountered an error.";
+    }
+  }
 
   /**
    * Pings the FastAPI health endpoint to check connection state
@@ -63,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch {
       statusDot.className = "status-dot disconnected";
-      statusText.innerText = "Disconnected";
+      statusText.innerText = "Offline";
     }
   }
 
@@ -77,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resumeFilename.title = result.userResume.name;
       } else {
         resumeFilename.innerText = "No file selected";
+        resumeFilename.title = "";
       }
     });
   }
@@ -156,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         extractedFields = state.extractedFields || [];
         currentJsonPayload = state.currentJsonPayload || "";
-        analysisJson.innerText = currentJsonPayload;
+        analysisJson.innerText = currentJsonPayload || "No fields scanned yet. Run \"Autofill Application\" from Workspace.";
 
         generatedActionsPlan = state.generatedActionsPlan || [];
         if (generatedActionsPlan.length > 0) {
@@ -173,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         if (extractedFields.length > 0) {
           resultsSection.classList.remove("hidden");
-          analysisJsonContainer.classList.remove("hidden");
+          statTotalBadge.innerText = `${extractedFields.length} field${extractedFields.length === 1 ? '' : 's'} mapped`;
         }
       }
     });
@@ -246,18 +324,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /**
-   * Single Hero Button: Analyzes Page -> Runs Backend Matching -> Applies Changes Automatically
+   * Hero Button Flow: Analyzes Page -> Runs Backend Matching -> Applies Changes Automatically
    */
   btnAutofill.addEventListener("click", async () => {
     btnAutofill.classList.add("loading");
     btnAutofill.disabled = true;
     btnAutofillText.innerText = "Analyzing page...";
     analysisError.classList.add("hidden");
+    updateProgress("scanning", "Scanning form inputs across page frames...", 25);
 
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const activeTab = tabs[0];
       if (!activeTab || !activeTab.id) {
-        showError("Unable to locate active tab.");
+        showError("Unable to locate active browser tab.");
         resetAutofillBtn();
         return;
       }
@@ -269,7 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
         url.startsWith("edge://") ||
         url.startsWith("about:")
       ) {
-        showError("Content scripts cannot run on system or browser utility pages.");
+        showError("Content scripts cannot execute on internal browser pages.");
         resetAutofillBtn();
         return;
       }
@@ -296,7 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const frameResults = (await Promise.all(scanPromises)).filter(Boolean);
 
       if (frameResults.length === 0) {
-        showError("Communication failed. Reload the job application page and try again.");
+        showError("Communication failed. Please reload the job application page and try again.");
         resetAutofillBtn();
         return;
       }
@@ -331,11 +410,11 @@ document.addEventListener("DOMContentLoaded", () => {
       statSelects.innerText = String(totalSelects);
 
       extractedFields = combinedFields;
+      statTotalBadge.innerText = `${extractedFields.length} field${extractedFields.length === 1 ? '' : 's'} mapped`;
       currentJsonPayload = JSON.stringify(extractedFields, null, 2);
       analysisJson.innerText = currentJsonPayload;
       
       resultsSection.classList.remove("hidden");
-      analysisJsonContainer.classList.remove("hidden");
 
       if (extractedFields.length === 0) {
         showError("No fillable form inputs found on the current page.");
@@ -344,7 +423,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Step 2: Call Backend AI Fill Plan
-      btnAutofillText.innerText = "Generating fill plan...";
+      btnAutofillText.innerText = "Matching with AI...";
+      updateProgress("planning", `Generating plan for ${extractedFields.length} fields...`, 60);
+
       try {
         const requestPayloadObject = { fields: extractedFields };
         debugRequestPayload = JSON.stringify(requestPayloadObject, null, 2);
@@ -371,10 +452,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Step 3: Apply Fill Actions
         btnAutofillText.innerText = "Applying autofill...";
+        updateProgress("injecting", `Filling ${generatedActionsPlan.length} inputs & attachments...`, 85);
         applyPlanToPage(activeTab.id!, activeTab.url || "");
 
       } catch (err) {
         showError(`AI Matching failed: ${err instanceof Error ? err.message : String(err)}`);
+        updateProgress("error", "AI Matching failed");
         resetAutofillBtn();
       }
     });
@@ -429,7 +512,8 @@ document.addEventListener("DOMContentLoaded", () => {
           if (errors === 0) {
             onAutofillSuccess(activeTabUrl);
           } else {
-            showError(`Autofill completed with ${errors} injection error(s).`);
+            showError(`Autofill finished with ${errors} injection error(s).`);
+            updateProgress("error", `Completed with ${errors} issue(s)`);
             resetAutofillBtn();
             savePopupState(activeTabUrl);
           }
@@ -494,11 +578,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function onAutofillSuccess(activeTabUrl: string) {
+    updateProgress("complete", "Autofill completed successfully! ✓", 100);
     btnAutofill.classList.remove("loading");
     btnAutofill.disabled = false;
     btnAutofillText.innerText = "Autofill Complete! ✓";
     btnAutofill.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
-    btnAutofill.style.boxShadow = "0 4px 14px rgba(16, 185, 129, 0.4)";
+    btnAutofill.style.boxShadow = "0 8px 24px -4px rgba(16, 185, 129, 0.45)";
     
     savePopupState(activeTabUrl);
 
@@ -506,7 +591,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnAutofillText.innerText = "Autofill Application";
       btnAutofill.style.background = "";
       btnAutofill.style.boxShadow = "";
-    }, 3000);
+    }, 4000);
   }
 
   function resetAutofillBtn() {
@@ -525,11 +610,13 @@ document.addEventListener("DOMContentLoaded", () => {
     
     navigator.clipboard.writeText(currentJsonPayload)
       .then(() => {
-        copyStatus.innerText = "Copied!";
-        btnCopyJson.style.color = "var(--success)";
+        copyStatus.innerText = "Copied! ✓";
+        btnCopyJson.style.color = "var(--liquid-emerald)";
+        btnCopyJson.style.borderColor = "var(--liquid-emerald)";
         setTimeout(() => {
-          copyStatus.innerText = "Copy";
+          copyStatus.innerText = "Copy JSON";
           btnCopyJson.style.color = "";
+          btnCopyJson.style.borderColor = "";
         }, 1500);
       })
       .catch((err) => {
