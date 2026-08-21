@@ -64,7 +64,10 @@ npx tsc --noEmit
 ### 3. Backend & LLM Matching Contract
 - **Completeness Invariant**: The backend `FillPlan.actions` MUST contain exactly 1 action per input field in the exact same array order.
 - **Option Strictness**: For `optionsMode: "strict"`, the value MUST match an existing option verbatim (case-exact where possible). Never rephrase or hallucinate options.
-- **N/A and Missing Data**: If context contains `(N/A)` or no score, map to verbatim "N/A" / "Not Applicable" / "None" if present in options; otherwise make a logical fallback choice rather than skipping.
+- **Privacy Notices & Candidate Consents**: All questions regarding Candidate Privacy Notices, Data Processing Consents, Cross-Border Transfer Consents, Terms of Application, and Accuracy Declarations MUST be answered affirmatively (`Yes`, `I Agree`, `Agree`, `I Consent`, `Consent`, or checkbox `true`) so candidate applications are not rejected or discarded.
+- **N/A and Missing Data**:
+  - **Optional Fields (`required: false`)**: If context is `(N/A)`, empty, or lacks useful info, mark `action: "skip"` and `value: ""` to leave it blank/unselected rather than filling with "N/A" or guessing.
+  - **Required Fields (`required: true`)**: Map to verbatim "N/A" / "Not Applicable" / "None" / "Decline" if present in options; otherwise make a logical fallback choice rather than skipping.
 
 ### 4. Chrome Extension & State Management
 - **Manifest V3 Constraints**: Content scripts cannot execute on `chrome://`, `edge://`, `chrome-extension://`, or `about:` URLs.

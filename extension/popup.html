@@ -26,21 +26,6 @@
 
     <main class="content">
       <div id="tab-content-main" class="tab-content">
-        <!-- Connection Testing Section -->
-        <section class="section">
-          <h2>Backend Connection</h2>
-          <div class="btn-group">
-            <button id="btn-test-conn" class="btn btn-primary">
-              <span>Test Connection</span>
-              <div class="spinner" id="conn-spinner"></div>
-            </button>
-          </div>
-          <div id="conn-result" class="result-box hidden"></div>
-        </section>
-
-        <!-- Divider -->
-        <hr class="divider" />
-
         <!-- Resume Settings Section -->
         <section class="section">
           <h2>Resume Configuration</h2>
@@ -61,10 +46,23 @@
         <!-- Divider -->
         <hr class="divider" />
 
-        <!-- Page Analysis Section -->
+        <!-- Single Action Section -->
         <section class="section">
-          <h2>Page Analysis</h2>
-          <div id="analysis-data" class="analysis-box hidden">
+          <div class="btn-group">
+            <button id="btn-autofill" class="btn btn-primary btn-hero">
+              <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span id="btn-autofill-text">Autofill Application</span>
+              <div class="spinner" id="autofill-spinner"></div>
+            </button>
+          </div>
+
+          <div id="analysis-error" class="error-box hidden"></div>
+        </section>
+
+        <!-- Page Analysis & Applied Actions Section -->
+        <section id="results-section" class="section hidden">
+          <h2>Page & Results</h2>
+          <div id="analysis-data" class="analysis-box">
             <div class="data-item">
               <span class="data-label">URL:</span>
               <span class="data-value truncate" id="info-url">-</span>
@@ -88,14 +86,11 @@
               </div>
             </div>
 
-            <!-- AI Proposed Actions Preview container -->
+            <!-- Applied Actions Container -->
             <div id="ai-plan-container" class="plan-container hidden">
               <div class="plan-header">
-                <span>AI Proposed Actions Plan</span>
-                <button id="btn-apply-plan" class="btn btn-primary btn-sm">
-                  <span>Apply Autofill</span>
-                  <div class="spinner" id="apply-spinner"></div>
-                </button>
+                <span>Applied Actions</span>
+                <span id="applied-count-badge" class="applied-badge">0 actions</span>
               </div>
               <div id="ai-plan-list" class="plan-list"></div>
             </div>
@@ -112,18 +107,6 @@
               <pre id="analysis-json"></pre>
             </div>
           </div>
-          
-          <div class="btn-group gap-y">
-            <button id="btn-generate-plan" class="btn btn-primary hidden">
-              <span>Generate Fill Plan</span>
-              <div class="spinner" id="plan-spinner"></div>
-            </button>
-            <button id="btn-analyze-page" class="btn btn-secondary">
-              <span>Analyze Page</span>
-            </button>
-          </div>
-          
-          <div id="analysis-error" class="error-box hidden"></div>
         </section>
       </div> <!-- end tab-content-main -->
 
@@ -132,7 +115,7 @@
           <h2>API Debug Console</h2>
           <div class="debug-pane">
             <h3>Last Request Sent (Scanner Payload)</h3>
-            <pre id="debug-request-box" class="debug-code">No request sent yet. Run "Generate Fill Plan" or "Analyze Page".</pre>
+            <pre id="debug-request-box" class="debug-code">No request sent yet. Run "Autofill Application".</pre>
           </div>
           <div class="debug-pane">
             <h3>Last Response Received (AI Fill Plan)</h3>
@@ -143,7 +126,7 @@
     </main>
 
     <footer class="footer">
-      <span>AI Autofiller Scaffold v1.0</span>
+      <span>AI Autofiller v1.0</span>
     </footer>
   </div>
 

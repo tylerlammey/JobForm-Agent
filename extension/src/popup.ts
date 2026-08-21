@@ -5,17 +5,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const statusDot = document.getElementById("status-dot") as HTMLElement;
   const statusText = document.getElementById("status-text") as HTMLElement;
   
-  const btnTestConn = document.getElementById("btn-test-conn") as HTMLButtonElement;
-  const connResult = document.getElementById("conn-result") as HTMLElement;
-
-  const btnAnalyzePage = document.getElementById("btn-analyze-page") as HTMLButtonElement;
-  const btnGeneratePlan = document.getElementById("btn-generate-plan") as HTMLButtonElement;
-  const btnApplyPlan = document.getElementById("btn-apply-plan") as HTMLButtonElement;
-  const btnFillResume = document.getElementById("btn-fill-resume") as HTMLButtonElement | null;
+  const btnAutofill = document.getElementById("btn-autofill") as HTMLButtonElement;
+  const btnAutofillText = document.getElementById("btn-autofill-text") as HTMLElement;
   
+  const resultsSection = document.getElementById("results-section") as HTMLElement;
   const analysisData = document.getElementById("analysis-data") as HTMLElement;
   const aiPlanContainer = document.getElementById("ai-plan-container") as HTMLElement;
   const aiPlanList = document.getElementById("ai-plan-list") as HTMLElement;
+  const appliedCountBadge = document.getElementById("applied-count-badge") as HTMLElement;
+
   const infoUrl = document.getElementById("info-url") as HTMLElement;
   const infoTitle = document.getElementById("info-title") as HTMLElement;
   const statInputs = document.getElementById("stat-inputs") as HTMLElement;
@@ -24,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const analysisError = document.getElementById("analysis-error") as HTMLElement;
 
   // JSON viewer elements
+  const analysisJsonContainer = document.getElementById("analysis-json-container") as HTMLElement;
   const analysisJson = document.getElementById("analysis-json") as HTMLElement;
   const btnCopyJson = document.getElementById("btn-copy-json") as HTMLButtonElement;
   const copyStatus = document.getElementById("copy-status") as HTMLElement;
@@ -45,8 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentJsonPayload = "";
   let extractedFields: any[] = [];
   let generatedActionsPlan: any[] = [];
-  let hasSavedResume = false;
-  let debugRequestPayload = "No request sent yet. Run \"Generate Fill Plan\" or \"Analyze Page\".";
+  let debugRequestPayload = "No request sent yet. Run \"Autofill Application\".";
   let debugResponsePayload = "No response received yet.";
 
   /**
@@ -63,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         throw new Error("Backend unhealthy");
       }
-    } catch (err) {
+    } catch {
       statusDot.className = "status-dot disconnected";
       statusText.innerText = "Disconnected";
     }
@@ -77,14 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (result.userResume && result.userResume.name && result.userResume.data) {
         resumeFilename.innerText = result.userResume.name;
         resumeFilename.title = result.userResume.name;
-        hasSavedResume = true;
-        
-        // Dynamic visibility check for Autofill Resume button
-        checkShowFillResumeBtn();
       } else {
         resumeFilename.innerText = "No file selected";
-        hasSavedResume = false;
-        btnFillResume?.classList.add("hidden");
       }
     });
   }
@@ -170,18 +162,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (generatedActionsPlan.length > 0) {
           renderPlanList(generatedActionsPlan);
           aiPlanContainer.classList.remove("hidden");
+          appliedCountBadge.innerText = `${generatedActionsPlan.length} action${generatedActionsPlan.length === 1 ? '' : 's'}`;
         }
 
         // Restore debug payload logs
-        debugRequestPayload = state.debugRequestPayload || "No request sent yet. Run \"Generate Fill Plan\" or \"Analyze Page\".";
+        debugRequestPayload = state.debugRequestPayload || "No request sent yet. Run \"Autofill Application\".";
         debugResponsePayload = state.debugResponsePayload || "No response received yet.";
         debugRequestBox.innerText = debugRequestPayload;
         debugResponseBox.innerText = debugResponsePayload;
         
-        checkShowFillResumeBtn();
         if (extractedFields.length > 0) {
-          btnGeneratePlan.classList.remove("hidden");
-          analysisData.classList.remove("hidden");
+          resultsSection.classList.remove("hidden");
+          analysisJsonContainer.classList.remove("hidden");
         }
       }
     });
@@ -235,104 +227,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /**
-   * Identifies if a file field is likely the main resume slot based on label and ID
+   * Single Hero Button: Analyzes Page -> Runs Backend Matching -> Applies Changes Automatically
    */
-  function isResumeField(field: any): boolean {
-    const label = (field.label || "").toLowerCase();
-    const id = (field.id || "").toLowerCase();
-
-    // Explicitly avoid non-resume attachments
-    if (
-      label.includes("cover") || id.includes("cover") ||
-      label.includes("portfolio") || id.includes("portfolio") ||
-      label.includes("transcript") || id.includes("transcript") ||
-      label.includes("photo") || id.includes("photo") ||
-      label.includes("other") || id.includes("other")
-    ) {
-      return false;
-    }
-
-    // Explicitly match resume keywords
-    if (
-      label.includes("resume") || id.includes("resume") ||
-      label.includes("cv") || id.includes("cv") ||
-      label.includes("curriculum")
-    ) {
-      return true;
-    }
-
-    // Fallback for generic inputs (e.g. "Attach", "Upload File")
-    if (label.includes("attach") || label.includes("upload") || label.includes("file")) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Helper to verify if manual "Autofill Resume" should be shown.
-   * Only shown if page contains at least one target resume 'file' input AND user has saved a resume.
-   */
-  function checkShowFillResumeBtn() {
-    const hasResumeField = extractedFields.some(f => f.type === "file" && isResumeField(f));
-    if (hasResumeField && hasSavedResume) {
-      btnFillResume?.classList.remove("hidden");
-    } else {
-      btnFillResume?.classList.add("hidden");
-    }
-  }
-
-  /**
-   * Performs an API call to the backend test endpoint
-   */
-  btnTestConn.addEventListener("click", async () => {
-    btnTestConn.classList.add("loading");
-    btnTestConn.disabled = true;
-    connResult.classList.add("hidden");
-    connResult.innerText = "";
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/test`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      connResult.innerText = data.message || JSON.stringify(data);
-      connResult.classList.remove("hidden");
-      
-      statusDot.className = "status-dot connected";
-      statusText.innerText = "Connected";
-    } catch (err) {
-      connResult.innerText = `Connection failed: ${err instanceof Error ? err.message : String(err)}`;
-      connResult.classList.remove("hidden");
-      
-      statusDot.className = "status-dot disconnected";
-      statusText.innerText = "Disconnected";
-    } finally {
-      btnTestConn.classList.remove("loading");
-      btnTestConn.disabled = false;
-    }
-  });
-
-  /**
-   * Sends a message to the content script of the active tab to extract page analytics
-   */
-  btnAnalyzePage.addEventListener("click", () => {
-    analysisData.classList.add("hidden");
+  btnAutofill.addEventListener("click", async () => {
+    btnAutofill.classList.add("loading");
+    btnAutofill.disabled = true;
+    btnAutofillText.innerText = "Analyzing page...";
     analysisError.classList.add("hidden");
-    aiPlanContainer.classList.add("hidden");
-    btnFillResume?.classList.add("hidden");
-    btnGeneratePlan.classList.add("hidden");
-    currentJsonPayload = "";
-    extractedFields = [];
-    generatedActionsPlan = [];
-    aiPlanList.innerHTML = "";
-    analysisJson.innerText = "";
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const activeTab = tabs[0];
       if (!activeTab || !activeTab.id) {
         showError("Unable to locate active tab.");
+        resetAutofillBtn();
         return;
       }
 
@@ -344,297 +251,218 @@ document.addEventListener("DOMContentLoaded", () => {
         url.startsWith("about:")
       ) {
         showError("Content scripts cannot run on system or browser utility pages.");
+        resetAutofillBtn();
         return;
       }
 
-      chrome.tabs.sendMessage(activeTab.id, { action: "ANALYZE_PAGE" }, (response) => {
+      // Step 1: Analyze Page
+      chrome.tabs.sendMessage(activeTab.id, { action: "ANALYZE_PAGE" }, async (scanResponse) => {
         if (chrome.runtime.lastError) {
-          showError("Communication failed. Reload the current page and try again.");
+          showError("Communication failed. Reload the job application page and try again.");
           console.error(chrome.runtime.lastError);
+          resetAutofillBtn();
           return;
         }
 
-        if (!response) {
+        if (!scanResponse) {
           showError("Did not receive a response from the content script.");
+          resetAutofillBtn();
           return;
         }
 
-        if (response.error) {
-          showError(response.error);
+        if (scanResponse.error) {
+          showError(scanResponse.error);
+          resetAutofillBtn();
           return;
         }
 
-        // Render extracted metrics
-        infoUrl.innerText = response.url || "-";
-        infoUrl.title = response.url || "";
-        infoTitle.innerText = response.title || "-";
-        infoTitle.title = response.title || "";
+        // Render metrics
+        infoUrl.innerText = scanResponse.url || "-";
+        infoUrl.title = scanResponse.url || "";
+        infoTitle.innerText = scanResponse.title || "-";
+        infoTitle.title = scanResponse.title || "";
         
-        statInputs.innerText = String(response.inputsCount ?? 0);
-        statTextareas.innerText = String(response.textareasCount ?? 0);
-        statSelects.innerText = String(response.selectsCount ?? 0);
+        statInputs.innerText = String(scanResponse.inputsCount ?? 0);
+        statTextareas.innerText = String(scanResponse.textareasCount ?? 0);
+        statSelects.innerText = String(scanResponse.selectsCount ?? 0);
 
-        // Format and render raw fields JSON
-        if (response.fields && Array.isArray(response.fields)) {
-          extractedFields = response.fields;
-          currentJsonPayload = JSON.stringify(response.fields, null, 2);
-          analysisJson.innerText = currentJsonPayload;
-          
-          // Show Autofill Resume button if appropriate
-          checkShowFillResumeBtn();
-          
-          // Show Generate Fill Plan button since we have scanned fields
-          if (extractedFields.length > 0) {
-            btnGeneratePlan.classList.remove("hidden");
-          }
-        } else {
-          analysisJson.innerText = "[]";
+        extractedFields = scanResponse.fields || [];
+        currentJsonPayload = JSON.stringify(extractedFields, null, 2);
+        analysisJson.innerText = currentJsonPayload;
+        
+        resultsSection.classList.remove("hidden");
+        analysisJsonContainer.classList.remove("hidden");
+
+        if (extractedFields.length === 0) {
+          showError("No fillable form inputs found on the current page.");
+          resetAutofillBtn();
+          return;
         }
 
-        analysisData.classList.remove("hidden");
+        // Step 2: Call Backend AI Fill Plan
+        btnAutofillText.innerText = "Generating fill plan...";
+        try {
+          const requestPayloadObject = { fields: extractedFields };
+          debugRequestPayload = JSON.stringify(requestPayloadObject, null, 2);
+          debugRequestBox.innerText = debugRequestPayload;
 
-        // Save state for active tab
-        savePopupState(activeTab.url || "");
+          const backendRes = await fetch(`${BACKEND_URL}/api/fill-form`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestPayloadObject)
+          });
+
+          if (!backendRes.ok) {
+            throw new Error(`Backend HTTP error ${backendRes.status}: ${backendRes.statusText}`);
+          }
+
+          const plan = await backendRes.json();
+          debugResponsePayload = JSON.stringify(plan, null, 2);
+          debugResponseBox.innerText = debugResponsePayload;
+
+          generatedActionsPlan = plan.actions || [];
+          renderPlanList(generatedActionsPlan);
+          aiPlanContainer.classList.remove("hidden");
+          appliedCountBadge.innerText = `${generatedActionsPlan.length} action${generatedActionsPlan.length === 1 ? '' : 's'}`;
+
+          // Step 3: Apply Fill Actions
+          btnAutofillText.innerText = "Applying autofill...";
+          applyPlanToPage(activeTab.id!, activeTab.url || "");
+
+        } catch (err) {
+          showError(`AI Matching failed: ${err instanceof Error ? err.message : String(err)}`);
+          resetAutofillBtn();
+        }
       });
     });
   });
 
   /**
-   * Action to query the FastAPI LLM matching endpoint to create the filling plan
+   * Applies the plan actions directly to the content script
    */
-  btnGeneratePlan.addEventListener("click", async () => {
-    btnGeneratePlan.classList.add("loading");
-    btnGeneratePlan.disabled = true;
-    analysisError.classList.add("hidden");
-    aiPlanContainer.classList.add("hidden");
-    aiPlanList.innerHTML = "";
-    generatedActionsPlan = [];
-
-    try {
-      const requestPayloadObject = { fields: extractedFields };
-      debugRequestPayload = JSON.stringify(requestPayloadObject, null, 2);
-      debugRequestBox.innerText = debugRequestPayload;
-
-      const response = await fetch(`${BACKEND_URL}/api/fill-form`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestPayloadObject)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const plan = await response.json();
-      debugResponsePayload = JSON.stringify(plan, null, 2);
-      debugResponseBox.innerText = debugResponsePayload;
-
-      generatedActionsPlan = plan.actions;
-
-      // Render the plan list in the UI for verification
-      renderPlanList(generatedActionsPlan);
-
-      // Show container
-      aiPlanContainer.classList.remove("hidden");
-
-      // Save state
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const activeTab = tabs[0];
-        if (activeTab && activeTab.url) {
-          savePopupState(activeTab.url);
-        }
-      });
-
-    } catch (err) {
-      showError(`AI Plan Generation failed: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      btnGeneratePlan.classList.remove("loading");
-      btnGeneratePlan.disabled = false;
+  function applyPlanToPage(tabId: number, activeTabUrl: string) {
+    if (generatedActionsPlan.length === 0) {
+      resetAutofillBtn();
+      return;
     }
-  });
 
-  /**
-   * Action to apply the generated AI Fill Plan to the page
-   */
-  btnApplyPlan.addEventListener("click", () => {
-    if (generatedActionsPlan.length === 0) return;
-    btnApplyPlan.classList.add("loading");
-    btnApplyPlan.disabled = true;
+    chrome.storage.local.get("userResume", (storageResult) => {
+      const resume = storageResult.userResume;
+      
+      let completed = 0;
+      let errors = 0;
+      
+      const fillActions = generatedActionsPlan.filter(a => a.action !== "skip");
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const activeTab = tabs[0];
-      if (!activeTab || !activeTab.id) {
-        showError("Unable to locate active tab.");
-        btnApplyPlan.classList.remove("loading");
-        btnApplyPlan.disabled = false;
+      if (fillActions.length === 0) {
+        onAutofillSuccess(activeTabUrl);
         return;
       }
 
-      chrome.storage.local.get("userResume", (storageResult) => {
-        const resume = storageResult.userResume;
-        
-        let completed = 0;
-        let errors = 0;
-        
-        // Filter out actions set to skip
-        const fillActions = generatedActionsPlan.filter(a => a.action !== "skip");
+      const uploadActions = fillActions.filter(a => a.action === "upload");
+      const standardActions = fillActions.filter(a => a.action !== "upload");
+      const totalBatches = uploadActions.length + (standardActions.length > 0 ? 1 : 0);
 
-        if (fillActions.length === 0) {
-          btnApplyPlan.classList.remove("loading");
-          btnApplyPlan.disabled = false;
-          return;
-        }
-
-        const uploadActions = fillActions.filter(a => a.action === "upload");
-        const standardActions = fillActions.filter(a => a.action !== "upload");
-        const totalActions = uploadActions.length + (standardActions.length > 0 ? 1 : 0);
-
-        function checkFinish() {
-          if (completed === totalActions) {
-            btnApplyPlan.classList.remove("loading");
-            btnApplyPlan.disabled = false;
-            
-            if (errors === 0) {
-              const originalText = btnApplyPlan.querySelector("span")?.innerText || "Apply Autofill";
-              const spanEl = btnApplyPlan.querySelector("span") as HTMLElement;
-              spanEl.innerText = "Autofill Applied! ✓";
-              btnApplyPlan.style.backgroundColor = "var(--success)";
-              setTimeout(() => {
-                spanEl.innerText = originalText;
-                btnApplyPlan.style.backgroundColor = "";
-              }, 2500);
-            } else {
-              showError(`Applied with ${errors} field injection errors.`);
-            }
+      function checkFinish() {
+        if (completed === totalBatches) {
+          if (errors === 0) {
+            onAutofillSuccess(activeTabUrl);
+          } else {
+            showError(`Autofill completed with ${errors} injection error(s).`);
+            resetAutofillBtn();
+            savePopupState(activeTabUrl);
           }
         }
+      }
 
-        // 1. Handle file uploads (handled individually since they need local base64 resume data)
-        uploadActions.forEach((planAction) => {
-          if (planAction.value === "resume") {
-            if (!resume || !resume.data) {
-              errors++;
-              completed++;
-              console.error("Resume file is missing from extension storage.");
-              checkFinish();
-              return;
-            }
-
-            chrome.tabs.sendMessage(activeTab.id, {
-              action: "UPLOAD_FILE",
-              selector: planAction.selector,
-              fileData: resume.data,
-              fileName: resume.name
-            }, (res) => {
-              completed++;
-              if (chrome.runtime.lastError || !res || res.error) {
-                errors++;
-                console.error("Upload error:", chrome.runtime.lastError || res?.error);
-              }
-              checkFinish();
-            });
-          }
-        });
-
-        // 2. Handle standard input / selection fields in a single sequential batch message
-        if (standardActions.length > 0) {
-          const fieldsToFill = standardActions.map(a => {
-            const fieldMeta = extractedFields.find(f => f.elementSelector === a.selector);
-            return {
-              selector: a.selector,
-              fillAction: a.action,
-              value: a.value,
-              label: a.label,
-              optionsMode: fieldMeta ? fieldMeta.optionsMode : undefined
-            };
-          });
-
-          chrome.tabs.sendMessage(activeTab.id, {
-            action: "FILL_ALL_FIELDS",
-            fields: fieldsToFill
-          }, (res) => {
+      // 1. Handle file uploads (handled individually with base64 data)
+      uploadActions.forEach((planAction) => {
+        if (planAction.value === "resume") {
+          if (!resume || !resume.data) {
+            errors++;
             completed++;
-            if (chrome.runtime.lastError || !res) {
-              errors += standardActions.length;
-              console.error("Batch fill error:", chrome.runtime.lastError || "No response received");
-            } else if (res.results) {
-              res.results.forEach((r: any) => {
-                if (!r.success) {
-                  errors++;
-                  console.error(`Error filling field ${r.label || r.selector}: ${r.error}`);
-                }
-              });
-            }
+            console.error("Resume file is missing from extension storage.");
             checkFinish();
-          });
-        }
-      });
-    });
-  });
+            return;
+          }
 
-  /**
-   * Action to autofill resume file fields on page (Legacy Manual Shortcut)
-   */
-  btnFillResume?.addEventListener("click", () => {
-    if (btnFillResume) btnFillResume.disabled = true;
-    const resumeFields = extractedFields.filter(f => f.type === "file" && isResumeField(f));
-    if (resumeFields.length === 0) return;
-
-    chrome.storage.local.get("userResume", (result) => {
-      const resume = result.userResume;
-      if (!resume || !resume.data) {
-        showError("Resume not found in storage.");
-        if (btnFillResume) btnFillResume.disabled = false;
-        return;
-      }
-
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const activeTab = tabs[0];
-        if (!activeTab || !activeTab.id) {
-          showError("Unable to locate active tab.");
-          if (btnFillResume) btnFillResume.disabled = false;
-          return;
-        }
-
-        let completed = 0;
-        let errors = 0;
-
-        resumeFields.forEach((field) => {
-          chrome.tabs.sendMessage(activeTab.id, {
+          chrome.tabs.sendMessage(tabId, {
             action: "UPLOAD_FILE",
-            selector: field.elementSelector,
+            selector: planAction.selector,
             fileData: resume.data,
             fileName: resume.name
           }, (res) => {
             completed++;
             if (chrome.runtime.lastError || !res || res.error) {
               errors++;
-              console.error("Upload error for field", field.id, chrome.runtime.lastError || res?.error);
+              console.error("Upload error:", chrome.runtime.lastError || res?.error);
             }
-
-            if (completed === resumeFields.length) {
-              if (btnFillResume) btnFillResume.disabled = false;
-              if (errors === 0) {
-                const originalText = btnFillResume ? btnFillResume.innerText : "";
-                if (btnFillResume) {
-                  btnFillResume.innerText = "Resume Filled! ✓";
-                  btnFillResume.style.backgroundColor = "var(--success)";
-                }
-                setTimeout(() => {
-                  if (btnFillResume) {
-                    btnFillResume.innerText = originalText;
-                    btnFillResume.style.backgroundColor = "";
-                  }
-                }, 2500);
-              } else {
-                showError(`Failed to upload to ${errors} file inputs.`);
-              }
-            }
+            checkFinish();
           });
-        });
+        } else {
+          completed++;
+          checkFinish();
+        }
       });
+
+      // 2. Handle standard input / selection fields in a single sequential batch
+      if (standardActions.length > 0) {
+        const fieldsToFill = standardActions.map(a => {
+          const fieldMeta = extractedFields.find(f => f.elementSelector === a.selector);
+          return {
+            selector: a.selector,
+            fillAction: a.action,
+            value: a.value,
+            label: a.label,
+            optionsMode: fieldMeta ? fieldMeta.optionsMode : undefined
+          };
+        });
+
+        chrome.tabs.sendMessage(tabId, {
+          action: "FILL_ALL_FIELDS",
+          fields: fieldsToFill
+        }, (res) => {
+          completed++;
+          if (chrome.runtime.lastError || !res) {
+            errors += standardActions.length;
+            console.error("Batch fill error:", chrome.runtime.lastError || "No response received");
+          } else if (res.results) {
+            res.results.forEach((r: any) => {
+              if (!r.success) {
+                errors++;
+                console.error(`Error filling field ${r.label || r.selector}: ${r.error}`);
+              }
+            });
+          }
+          checkFinish();
+        });
+      }
     });
-  });
+  }
+
+  function onAutofillSuccess(activeTabUrl: string) {
+    btnAutofill.classList.remove("loading");
+    btnAutofill.disabled = false;
+    btnAutofillText.innerText = "Autofill Complete! ✓";
+    btnAutofill.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
+    btnAutofill.style.boxShadow = "0 4px 14px rgba(16, 185, 129, 0.4)";
+    
+    savePopupState(activeTabUrl);
+
+    setTimeout(() => {
+      btnAutofillText.innerText = "Autofill Application";
+      btnAutofill.style.background = "";
+      btnAutofill.style.boxShadow = "";
+    }, 3000);
+  }
+
+  function resetAutofillBtn() {
+    btnAutofill.classList.remove("loading");
+    btnAutofill.disabled = false;
+    btnAutofillText.innerText = "Autofill Application";
+    btnAutofill.style.background = "";
+    btnAutofill.style.boxShadow = "";
+  }
 
   /**
    * Copies current JSON output payload to clipboard

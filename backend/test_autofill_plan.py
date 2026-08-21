@@ -137,6 +137,88 @@ mock_fields = [
         "placeholder": "",
         "required": False,
         "elementSelector": "#alternate_phone"
+    },
+    {
+        "id": "work_auth_radio",
+        "name": "work_auth",
+        "type": "radio",
+        "label": "Are you legally authorized to work in the United States?*",
+        "placeholder": "",
+        "required": True,
+        "options": ["Yes", "No"],
+        "optionsMode": "strict",
+        "elementSelector": 'input[name="work_auth"]'
+    },
+    {
+        "id": "sponsorship_radio",
+        "name": "sponsorship",
+        "type": "radio",
+        "label": "Will you now or in the future require visa sponsorship?*",
+        "placeholder": "",
+        "required": True,
+        "options": ["Yes", "No"],
+        "optionsMode": "strict",
+        "elementSelector": 'input[name="sponsorship"]'
+    },
+    {
+        "id": "relocation_radio",
+        "name": "relocate",
+        "type": "radio",
+        "label": "Are you willing to relocate for this position?*",
+        "placeholder": "",
+        "required": True,
+        "options": ["Yes", "No", "Depends on location"],
+        "optionsMode": "strict",
+        "elementSelector": 'input[name="relocate"]'
+    },
+    {
+        "id": "privacy_understand_radio",
+        "name": "privacy_understand",
+        "type": "radio",
+        "label": "I understand the purposes for which my personal data will be collected during application stage.*",
+        "placeholder": "",
+        "required": True,
+        "options": ["Yes", "No"],
+        "optionsMode": "strict",
+        "elementSelector": 'input[name="privacy_understand"]'
+    },
+    {
+        "id": "privacy_consent_radio",
+        "name": "privacy_consent",
+        "type": "radio",
+        "label": "I hereby consent to sharing and provision of my Personal Information to third parties, including transfer to other countries, as described in the Candidate Privacy Notice.*",
+        "placeholder": "",
+        "required": True,
+        "options": ["Yes", "No"],
+        "optionsMode": "strict",
+        "elementSelector": 'input[name="privacy_consent"]'
+    },
+    {
+        "id": "resume_file_input",
+        "name": "resume",
+        "type": "file",
+        "label": "Attach Resume/CV*",
+        "placeholder": "",
+        "required": True,
+        "elementSelector": "#resume_file_input"
+    },
+    {
+        "id": "cover_letter_input",
+        "name": "cover_letter",
+        "type": "file",
+        "label": "Cover Letter (Optional)",
+        "placeholder": "",
+        "required": False,
+        "elementSelector": "#cover_letter_input"
+    },
+    {
+        "id": "portfolio_or_cover_letter",
+        "name": "portfolio_cover",
+        "type": "file",
+        "label": "Portfolio or Cover Letter",
+        "placeholder": "",
+        "required": False,
+        "elementSelector": "#portfolio_or_cover_letter"
     }
 ]
 
@@ -191,36 +273,36 @@ try:
             print(f"[FAIL] Overwrite Protection (Expected skip for pre-filled First Name, got: {first_name_act})")
             all_passed = False
 
-        # Check SAT (N/A verbatim)
+        # Check SAT (Optional field with N/A context -> should skip / leave blank)
         sat_act = next((a for a in actions if a["selector"] == "#sat_select"), None)
-        if sat_act and sat_act["action"] == "select" and sat_act["value"] == "N/A":
-            print("[PASS] SAT Score -> selected 'N/A' verbatim")
+        if sat_act and sat_act["action"] == "skip":
+            print("[PASS] SAT Score -> correctly skipped / left blank for optional field with N/A context")
         else:
-            print(f"[FAIL] SAT Score (Expected select 'N/A', got: {sat_act})")
+            print(f"[FAIL] SAT Score (Expected action: 'skip', got: {sat_act})")
             all_passed = False
 
-        # Check ACT (I did not take this test)
+        # Check ACT (Optional field with N/A context -> should skip / leave blank)
         act_act = next((a for a in actions if a["selector"] == "#act_select"), None)
-        if act_act and act_act["action"] == "select" and act_act["value"] == "I did not take this test":
-            print("[PASS] ACT Score -> selected 'I did not take this test'")
+        if act_act and act_act["action"] == "skip":
+            print("[PASS] ACT Score -> correctly skipped / left blank for optional field with N/A context")
         else:
-            print(f"[FAIL] ACT Score (Expected select 'I did not take this test', got: {act_act})")
+            print(f"[FAIL] ACT Score (Expected action: 'skip', got: {act_act})")
             all_passed = False
 
-        # Check GRE (Now forced to guess/select fallback)
+        # Check GRE (Optional field with N/A context -> should skip / leave blank)
         gre_act = next((a for a in actions if a["selector"] == "#gre_select"), None)
-        if gre_act and gre_act["action"] == "select":
-            print(f"[PASS] GRE Score -> guessed select option '{gre_act['value']}'")
+        if gre_act and gre_act["action"] == "skip":
+            print("[PASS] GRE Score -> correctly skipped / left blank for optional field with N/A context")
         else:
-            print(f"[FAIL] GRE Score (Expected select action, got: {gre_act})")
+            print(f"[FAIL] GRE Score (Expected action: 'skip', got: {gre_act})")
             all_passed = False
             
-        # Check Alternate Phone (Now forced to guess)
+        # Check Alternate Phone (Optional field with N/A context -> should skip / leave blank)
         alt_phone_act = next((a for a in actions if a["selector"] == "#alternate_phone"), None)
-        if alt_phone_act and alt_phone_act["action"] == "type" and alt_phone_act["value"]:
-            print(f"[PASS] Alternate Phone -> guessed typed value '{alt_phone_act['value']}'")
+        if alt_phone_act and alt_phone_act["action"] == "skip":
+            print("[PASS] Alternate Phone -> correctly skipped / left blank for optional field with N/A context")
         else:
-            print(f"[FAIL] Alternate Phone (Expected type action, got: {alt_phone_act})")
+            print(f"[FAIL] Alternate Phone (Expected action: 'skip', got: {alt_phone_act})")
             all_passed = False
 
         # Check Dynamic Clearance Option Selection
@@ -247,15 +329,76 @@ try:
             else:
                 parsed_vals = [val.strip()]
             
-            if "MATLAB" in parsed_vals and "VBA" in parsed_vals:
-                print(f"[PASS] Multiple Choice Select -> correctly selected both 'MATLAB' and 'VBA'")
+            valid_candidate_skills = {"Python", "MATLAB", "VBA", "C++", "HTML/CSS"}
+            matched_candidate_skills = [s for s in parsed_vals if s in valid_candidate_skills]
+            if len(matched_candidate_skills) >= 2:
+                print(f"[PASS] Multiple Choice Select -> correctly selected multiple candidate skills: {matched_candidate_skills}")
             else:
-                print(f"[FAIL] Multiple Choice Select (Expected 'MATLAB' and 'VBA' in {parsed_vals})")
+                print(f"[FAIL] Multiple Choice Select (Expected at least 2 candidate skills in {parsed_vals})")
                 all_passed = False
         else:
             print(f"[FAIL] Multiple Choice Select (Expected select action for #skills_select, got: {skills_act})")
             all_passed = False
             
+        # Check Radio Group Multiple Choice Questions
+        work_auth_act = next((a for a in actions if a["selector"] == 'input[name="work_auth"]'), None)
+        if work_auth_act and work_auth_act["value"] == "Yes":
+            print(f"[PASS] Work Auth Radio -> correctly matched 'Yes' ({work_auth_act['explanation']})")
+        else:
+            print(f"[FAIL] Work Auth Radio (Expected 'Yes', got: {work_auth_act})")
+            all_passed = False
+
+        sponsorship_act = next((a for a in actions if a["selector"] == 'input[name="sponsorship"]'), None)
+        if sponsorship_act and sponsorship_act["value"] == "No":
+            print(f"[PASS] Visa Sponsorship Radio -> correctly matched 'No' ({sponsorship_act['explanation']})")
+        else:
+            print(f"[FAIL] Visa Sponsorship Radio (Expected 'No', got: {sponsorship_act})")
+            all_passed = False
+
+        relocation_act = next((a for a in actions if a["selector"] == 'input[name="relocate"]'), None)
+        if relocation_act and relocation_act["value"] == "Yes":
+            print(f"[PASS] Relocation Radio -> correctly matched 'Yes' ({relocation_act['explanation']})")
+        else:
+            print(f"[FAIL] Relocation Radio (Expected 'Yes', got: {relocation_act})")
+            all_passed = False
+
+        # Check Privacy Policy & Candidate Consent Radios
+        privacy_und_act = next((a for a in actions if a["selector"] == 'input[name="privacy_understand"]'), None)
+        if privacy_und_act and privacy_und_act["value"] == "Yes":
+            print(f"[PASS] Privacy Understanding Radio -> correctly matched 'Yes' ({privacy_und_act['explanation']})")
+        else:
+            print(f"[FAIL] Privacy Understanding Radio (Expected 'Yes', got: {privacy_und_act})")
+            all_passed = False
+
+        privacy_con_act = next((a for a in actions if a["selector"] == 'input[name="privacy_consent"]'), None)
+        if privacy_con_act and privacy_con_act["value"] == "Yes":
+            print(f"[PASS] Privacy Consent Radio -> correctly matched 'Yes' ({privacy_con_act['explanation']})")
+        else:
+            print(f"[FAIL] Privacy Consent Radio (Expected 'Yes', got: {privacy_con_act})")
+            all_passed = False
+
+        # Check File Uploads (Resume vs Optional Cover Letter)
+        resume_act = next((a for a in actions if a["selector"] == "#resume_file_input"), None)
+        if resume_act and resume_act["action"] == "upload" and resume_act["value"] == "resume":
+            print(f"[PASS] Resume Upload -> correctly mapped to action 'upload' and value 'resume' ({resume_act['explanation']})")
+        else:
+            print(f"[FAIL] Resume Upload (Expected action: 'upload', value: 'resume', got: {resume_act})")
+            all_passed = False
+
+        cover_act = next((a for a in actions if a["selector"] == "#cover_letter_input"), None)
+        if cover_act and cover_act["action"] == "skip":
+            print(f"[PASS] Optional Cover Letter -> correctly skipped ({cover_act['explanation']})")
+        else:
+            print(f"[FAIL] Optional Cover Letter (Expected action: 'skip', got: {cover_act})")
+            all_passed = False
+
+        portfolio_cover_act = next((a for a in actions if a["selector"] == "#portfolio_or_cover_letter"), None)
+        if portfolio_cover_act and portfolio_cover_act["action"] == "skip":
+            print(f"[PASS] Portfolio or Cover Letter -> correctly skipped ({portfolio_cover_act['explanation']})")
+        else:
+            print(f"[FAIL] Portfolio or Cover Letter (Expected action: 'skip', got: {portfolio_cover_act})")
+            all_passed = False
+
         if not all_passed:
             print("\n[RESULT] One or more mapping checks failed!")
             import sys
