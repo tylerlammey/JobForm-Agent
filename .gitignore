@@ -33,8 +33,11 @@ credentials.json
 backend/me/context.md
 backend/me/*
 !backend/me/.gitkeep
+!backend/me/*.example.md
+!backend/me/context.example.md
 context.md
 **/context.md
+!*.example.md
 backend/scratch/
 *.pdf
 *.docx
