@@ -219,6 +219,97 @@ mock_fields = [
         "placeholder": "",
         "required": False,
         "elementSelector": "#portfolio_or_cover_letter"
+    },
+    {
+        "id": "linkedin_profile",
+        "name": "linkedin",
+        "type": "text",
+        "label": "LinkedIn Profile",
+        "placeholder": "https://",
+        "required": False,
+        "elementSelector": "#linkedin_profile"
+    },
+    {
+        "id": "website_url",
+        "name": "website",
+        "type": "text",
+        "label": "Website",
+        "placeholder": "https://",
+        "required": False,
+        "elementSelector": "#website_url"
+    },
+    {
+        "id": "edu_start_month",
+        "name": "start_month",
+        "type": "select",
+        "label": "Start date month*",
+        "placeholder": "",
+        "required": True,
+        "options": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        "optionsMode": "strict",
+        "elementSelector": "#edu_start_month"
+    },
+    {
+        "id": "why_company_question",
+        "name": "why_company",
+        "type": "text",
+        "label": "Tell us why you are interested in building an engineering career at Datadog.*",
+        "placeholder": "",
+        "required": True,
+        "elementSelector": "#why_company_question"
+    },
+    {
+        "id": "candidate_location",
+        "name": "candidate_location",
+        "type": "text",
+        "label": "Location (City)*",
+        "placeholder": "City, State",
+        "required": True,
+        "elementSelector": "#candidate_location"
+    },
+    {
+        "id": "spacex_sat_score",
+        "name": "sat_score_required",
+        "type": "select",
+        "label": "SAT Score*",
+        "placeholder": "",
+        "required": True,
+        "options": ["Select...", "1600", "1500", "1400", "1300", "Did not take/Do not recall", "Not applicable"],
+        "optionsMode": "strict",
+        "elementSelector": "#spacex_sat_score"
+    },
+    {
+        "id": "spacex_history",
+        "name": "spacex_history",
+        "type": "select",
+        "label": "SpaceX & SpaceXAI Employment History*",
+        "placeholder": "",
+        "required": True,
+        "options": [
+            "Select...",
+            "I have never worked for SpaceX, SpaceXAI, xAI, X, or Twitter",
+            "I am a former SpaceX employee",
+            "I am currently a SpaceX employee"
+        ],
+        "optionsMode": "strict",
+        "elementSelector": "#spacex_history"
+    },
+    {
+        "id": "spacex_citizenship",
+        "name": "citizenship_status",
+        "type": "select",
+        "label": "Citizenship Status*",
+        "placeholder": "",
+        "required": True,
+        "options": [
+            "Select...",
+            "(a) U.S. citizen or national of the United States",
+            "(b) Lawful Permanent Resident",
+            "(c) Asylee or Refugee",
+            "(f) Other"
+        ],
+        "optionsMode": "strict",
+        "elementSelector": "#spacex_citizenship"
     }
 ]
 
@@ -397,6 +488,67 @@ try:
             print(f"[PASS] Portfolio or Cover Letter -> correctly skipped ({portfolio_cover_act['explanation']})")
         else:
             print(f"[FAIL] Portfolio or Cover Letter (Expected action: 'skip', got: {portfolio_cover_act})")
+            all_passed = False
+
+        # Check LinkedIn Profile & Website (Should be filled even if optional)
+        linkedin_act = next((a for a in actions if a["selector"] == "#linkedin_profile"), None)
+        if linkedin_act and linkedin_act["action"] == "type" and "linkedin.com/in/tyler-lammey" in linkedin_act["value"]:
+            print(f"[PASS] LinkedIn Profile -> correctly matched URL '{linkedin_act['value']}' ({linkedin_act['explanation']})")
+        else:
+            print(f"[FAIL] LinkedIn Profile (Expected type with linkedin URL, got: {linkedin_act})")
+            all_passed = False
+
+        website_act = next((a for a in actions if a["selector"] == "#website_url"), None)
+        if website_act and website_act["action"] == "type" and "tylerlammey.com" in website_act["value"]:
+            print(f"[PASS] Website -> correctly matched URL '{website_act['value']}' ({website_act['explanation']})")
+        else:
+            print(f"[FAIL] Website (Expected type with tylerlammey.com, got: {website_act})")
+            all_passed = False
+
+        # Check College Start Month (Should be September, NOT May)
+        start_month_act = next((a for a in actions if a["selector"] == "#edu_start_month"), None)
+        if start_month_act and start_month_act["action"] == "select" and start_month_act["value"] == "September":
+            print(f"[PASS] Education Start Month -> correctly matched 'September' ({start_month_act['explanation']})")
+        else:
+            print(f"[FAIL] Education Start Month (Expected select 'September', got: {start_month_act})")
+            all_passed = False
+
+        # Check Open-Ended Why Company Question
+        why_comp_act = next((a for a in actions if a["selector"] == "#why_company_question"), None)
+        if why_comp_act and why_comp_act["action"] == "type" and len(why_comp_act["value"]) > 20 and "passionate about technology and eager" not in why_comp_act["value"].lower():
+            print(f"[PASS] Why Company Statement -> generated tailored response: \"{why_comp_act['value']}\" ({why_comp_act['explanation']})")
+        else:
+            print(f"[FAIL] Why Company Statement (Expected non-cliche response, got: {why_comp_act})")
+            all_passed = False
+
+        # Check SpaceX Location, SAT Score, Employment History & Citizenship
+        loc_act = next((a for a in actions if a["selector"] == "#candidate_location"), None)
+        if loc_act and loc_act["action"] == "type" and "Ridgewood" in loc_act["value"]:
+            print(f"[PASS] Location -> correctly matched location '{loc_act['value']}' ({loc_act['explanation']})")
+        else:
+            print(f"[FAIL] Location (Expected 'Ridgewood, NJ', got: {loc_act})")
+            all_passed = False
+
+        spacex_sat_act = next((a for a in actions if a["selector"] == "#spacex_sat_score"), None)
+        valid_sat_options = {"Did not take/Do not recall", "Not applicable"}
+        if spacex_sat_act and spacex_sat_act["action"] == "select" and spacex_sat_act["value"] in valid_sat_options:
+            print(f"[PASS] SpaceX SAT Score -> strictly matched valid test option '{spacex_sat_act['value']}' ({spacex_sat_act['explanation']})")
+        else:
+            print(f"[FAIL] SpaceX SAT Score (Expected option from valid test options, got: {spacex_sat_act})")
+            all_passed = False
+
+        spacex_hist_act = next((a for a in actions if a["selector"] == "#spacex_history"), None)
+        if spacex_hist_act and spacex_hist_act["action"] == "select" and "never worked" in spacex_hist_act["value"].lower():
+            print(f"[PASS] SpaceX Employment History -> matched '{spacex_hist_act['value']}' ({spacex_hist_act['explanation']})")
+        else:
+            print(f"[FAIL] SpaceX Employment History (Expected never worked, got: {spacex_hist_act})")
+            all_passed = False
+
+        spacex_cit_act = next((a for a in actions if a["selector"] == "#spacex_citizenship"), None)
+        if spacex_cit_act and spacex_cit_act["action"] == "select" and "U.S. citizen" in spacex_cit_act["value"]:
+            print(f"[PASS] SpaceX Citizenship -> matched '{spacex_cit_act['value']}' ({spacex_cit_act['explanation']})")
+        else:
+            print(f"[FAIL] SpaceX Citizenship (Expected U.S. citizen option, got: {spacex_cit_act})")
             all_passed = False
 
         if not all_passed:

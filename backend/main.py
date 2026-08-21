@@ -43,6 +43,7 @@ class ExtractedField(BaseModel):
     optionsMode: Optional[str] = None  # 'strict' | 'dynamic'
     elementSelector: str
     alreadyFilled: Optional[bool] = None
+    frameId: Optional[int] = None
 
 class FieldInputPayload(BaseModel):
     fields: List[ExtractedField]
@@ -229,6 +230,203 @@ def apply_resume_upload_safeguard(fields: List[ExtractedField], actions: List[Fi
 
     return actions
 
+def apply_candidate_links_safeguard(fields: List[ExtractedField], actions: List[FieldAction]) -> List[FieldAction]:
+    """
+    Ensures that text fields requesting social profiles / links (LinkedIn, Website / Portfolio, GitHub)
+    are populated with the candidate's URLs, even if marked optional.
+    """
+    for i, field in enumerate(fields):
+        if i >= len(actions):
+            break
+        if field.alreadyFilled:
+            continue
+            
+        search_text = f"{field.label} {field.name} {field.id}".lower()
+        
+        # Don't apply to file upload inputs or checkboxes
+        if field.type in ["file", "checkbox", "check"]:
+            continue
+            
+        # LinkedIn
+        if "linkedin" in search_text:
+            current_action = actions[i]
+            if current_action.action == "skip" or not current_action.value:
+                actions[i] = FieldAction(
+                    selector=current_action.selector,
+                    action="type",
+                    value="https://linkedin.com/in/tyler-lammey",
+                    label=current_action.label,
+                    explanation="Matched to LinkedIn profile"
+                )
+        # GitHub
+        elif "github" in search_text or "git_hub" in search_text:
+            current_action = actions[i]
+            if current_action.action == "skip" or not current_action.value:
+                actions[i] = FieldAction(
+                    selector=current_action.selector,
+                    action="type",
+                    value="https://github.com/tylerlammey",
+                    label=current_action.label,
+                    explanation="Matched to GitHub profile"
+                )
+        # Personal Website / Portfolio
+        elif any(w in search_text for w in ["website", "portfolio url", "personal site", "personal webpage", "online portfolio"]):
+            current_action = actions[i]
+            if current_action.action == "skip" or not current_action.value:
+                actions[i] = FieldAction(
+                    selector=current_action.selector,
+                    action="type",
+                    value="https://tylerlammey.com",
+                    label=current_action.label,
+                    explanation="Matched to personal website/portfolio URL"
+                )
+
+    return actions
+
+import json
+
+def is_option_valid(field: ExtractedField, action: FieldAction) -> bool:
+    """
+    Checks if an action's selected value exists in the field's options list
+    and is not an unselected placeholder.
+    """
+    if not field.options or len(field.options) == 0:
+        return True
+    
+    if action.action == "skip":
+        return True
+
+    if action.action == "select":
+        val = action.value.strip()
+        if not val:
+            return not field.required
+        
+        # Placeholders are never valid selections
+        placeholder_terms = ["select...", "select an option", "choose...", "choose an option", "please select", "please choose", "-- select --"]
+        if val.lower() in placeholder_terms:
+            return False
+        
+        # Multi-select dropdown or checkbox group
+        if field.multiple:
+            parsed_vals = []
+            if val.startswith("[") and val.endswith("]"):
+                try:
+                    parsed_vals = json.loads(val)
+                except Exception:
+                    parsed_vals = [v.strip() for v in val.split(";")]
+            elif ";" in val:
+                parsed_vals = [v.strip() for v in val.split(";")]
+            else:
+                parsed_vals = [val]
+            
+            return all(v in field.options and v.lower() not in placeholder_terms for v in parsed_vals if v)
+        else:
+            # Single select must be exactly in options and not a placeholder
+            return val in field.options and val.lower() not in placeholder_terms
+
+    return True
+
+def find_invalid_option_indices(fields: List[ExtractedField], actions: List[FieldAction]) -> List[int]:
+    invalid_indices = []
+    for i, field in enumerate(fields):
+        if i >= len(actions):
+            break
+        if field.alreadyFilled:
+            continue
+        if not is_option_valid(field, actions[i]):
+            invalid_indices.append(i)
+    return invalid_indices
+
+def retry_invalid_fields_with_llm(
+    fields: List[ExtractedField],
+    actions: List[FieldAction],
+    candidate_context: str,
+    max_retries: int = 3
+) -> List[FieldAction]:
+    """
+    Identifies fields with invalid or cross-contaminated option values
+    and re-runs ONLY those specific fields through the LLM with targeted feedback,
+    capped at max_retries attempts.
+    """
+    for attempt in range(1, max_retries + 1):
+        invalid_indices = find_invalid_option_indices(fields, actions)
+        if not invalid_indices:
+            break
+        
+        print(f"Self-correction retry attempt {attempt}/{max_retries} for {len(invalid_indices)} invalid field(s)...")
+        
+        sub_fields = [fields[i] for i in invalid_indices]
+        problem_details = []
+        for idx in invalid_indices:
+            f = fields[idx]
+            a = actions[idx]
+            problem_details.append({
+                "field_id": f.id,
+                "label": f.label,
+                "invalid_value_chosen": a.value,
+                "available_options": f.options
+            })
+        
+        retry_prompt = f"""
+You are correcting job application form fields that were previously assigned invalid values not found in their respective options list.
+
+=== CANDIDATE CONTEXT PROFILE ===
+{candidate_context}
+=== END CANDIDATE CONTEXT PROFILE ===
+
+CRITICAL INSTRUCTIONS:
+1. You MUST return exactly one `FieldAction` for each field in the provided input fields list, in the exact same order.
+2. For dropdown / select / radio / multiple choice fields: the `action` MUST be "select" (or "skip" if optional and left blank). NEVER use "set" or other action types.
+3. For every field, the `value` MUST be chosen EXACTLY and verbatim from that field's OWN `options` list.
+4. Placeholders like "Select...", "Choose...", "Please select...", "-- select --" are NEVER valid choices. You MUST pick a real option.
+5. NEVER pick an option that belongs to another question or is not in that field's `options` list.
+6. If candidate does not have a score / data for tests like SAT/ACT/GRE/GMAT, select "Did not take", "Not applicable", "N/A", "Do not recall", or equivalent verbatim from that field's options.
+7. If the field has multiple: true, format multiple selections as JSON array '["Opt1", "Opt2"]' or semicolon-separated 'Opt1; Opt2' using only options from that field's options list.
+"""
+
+        try:
+            retry_completion = openai_client.beta.chat.completions.parse(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": retry_prompt},
+                    {"role": "user", "content": f"The previous attempt had these option errors:\n{json.dumps(problem_details, indent=2)}\n\nHere are the extracted fields to correct:\n{json.dumps([f.model_dump() for f in sub_fields], indent=2)}"}
+                ],
+                response_format=FillPlan,
+                temperature=0.0
+            )
+            
+            corrected_actions = retry_completion.choices[0].message.parsed.actions
+            if len(corrected_actions) == len(invalid_indices):
+                for k, orig_idx in enumerate(invalid_indices):
+                    act = corrected_actions[k]
+                    # Normalize action to select if field has options and action is not skip/check
+                    if fields[orig_idx].options and act.action not in ["select", "skip", "check"]:
+                        act.action = "select"
+                    actions[orig_idx] = act
+                    print(f"Patched field [{fields[orig_idx].id}] -> action: {actions[orig_idx].action}, value: '{actions[orig_idx].value}'")
+        except Exception as e:
+            print(f"Error during LLM retry attempt {attempt}: {e}")
+            break
+
+    # If any fields remain invalid after max_retries, apply a deterministic fallback from field.options
+    remaining_invalid = find_invalid_option_indices(fields, actions)
+    for idx in remaining_invalid:
+        f = fields[idx]
+        current_act = actions[idx]
+        if f.options and len(f.options) > 0:
+            fallback = next((opt for opt in f.options if any(na in opt.lower() for na in ["not applicable", "did not take", "n/a", "none", "no preference", "decline"])), None)
+            if not fallback:
+                fallback = next((opt for opt in f.options if not any(ph in opt.lower() for ph in ["select", "choose", "please"])), f.options[0])
+            actions[idx] = FieldAction(
+                selector=current_act.selector,
+                action="select",
+                value=fallback,
+                label=current_act.label,
+                explanation="Resolved to valid option fallback"
+            )
+
+    return actions
+
 @app.get("/health")
 async def health_check():
     """
@@ -334,23 +532,37 @@ Instructions:
    - Veteran Status: Candidate is not a protected veteran. Select "I am not a protected veteran" or "No".
    - Gender: "Male".
    - Race / Ethnicity: "Hispanic or Latino", "White (Hispanic)".
-4. DATE FIELDS & SPLIT DATE INPUTS (MONTH / DAY / YEAR):
-   - Form fields representing dates may appear as a single input (`type: "date"` or `type: "text"` with label/placeholder like "MM/DD/YYYY") or split into separate sub-inputs for Month, Day, and Year (e.g., label or ID containing "Month", "Day", "Year", "dateSectionMonth", "dateSectionDay", "dateSectionYear", "dateSignedOn", etc.).
+4. CANDIDATE PROFILE LINKS & SOCIAL PROFILES:
+   - Fields requesting links (e.g. "LinkedIn", "LinkedIn Profile", "Personal Website", "Website", "Portfolio", "GitHub") MUST ALWAYS be filled with the candidate's exact URL from the context profile:
+     * LinkedIn: "https://linkedin.com/in/tyler-lammey"
+     * Website / Portfolio: "https://tylerlammey.com"
+     * GitHub: "https://github.com/tylerlammey"
+   - Even if these fields are marked optional (`required: false`), you MUST populate them with the candidate's URLs (action: "type"). Never skip candidate profile links.
+5. LOCATION & GEOGRAPHIC FIELDS:
+   - For location / city inputs or typeaheads (e.g. "Location (City)", "candidate-location", "City / State", "Location"):
+     * Provide "Ridgewood, NJ" (or "Ridgewood, NJ, United States") rather than just "Ridgewood" alone so geocoding and location searches match accurately.
+6. STANDARDIZED TEST QUESTIONS (SAT, ACT, GRE, GMAT):
+   - Candidate has not taken graduate or standardized tests (SAT/ACT/GRE).
+   - For REQUIRED test questions: select "Did not take", "Not applicable", "Did not take/Do not recall", "Other/Not Applicable", or "N/A" strictly from that specific field's OWN options list.
+   - NEVER pick an option that belongs to an adjacent question (such as clearance options) for a test score question.
+7. DATE FIELDS & SPLIT DATE INPUTS (MONTH / DAY / YEAR):
+   - Form fields representing dates may appear as a single input (`type: "date"` or `type: "text"` with label/placeholder like "MM/DD/YYYY") or split into separate sub-inputs for Month, Day, and Year.
    - Signature / Sign-Off / Application Dates (e.g. "Date Signed", "Signature Date", "Date", "Date Signed On", "Today's Date", or date inputs in self-identification / consent forms):
-     * ALWAYS fill with TODAY'S DATE (even if marked `required: false`, dating form signatures is expected):
-     * If split into separate Month, Day, Year inputs:
-       - Month field: Provide current month number "{cur_month_2digit}" (or "{cur_month_1digit}", or "{cur_month_name}" if options are month names). Action: "type" (or "select" if dropdown).
-       - Day field: Provide current day number "{cur_day_2digit}" (or "{cur_day_1digit}"). Action: "type" (or "select" if dropdown).
-       - Year field: Provide current year "{cur_year_4digit}". Action: "type" (or "select" if dropdown).
-     * If a single date input: Provide "{cur_date_standard}" (or "YYYY-MM-DD" for native date inputs).
-   - Profile Dates (e.g. Graduation Date, Available Start Date):
-     * Graduation Date: Candidate's graduation is 05/01/2027 (Month: "05", Day: "01", Year: "2027").
-     * Start Date: Candidate's availability is May 2027 (Month: "05", Day: "01", Year: "2027").
-     * If split into Month / Day / Year, populate the respective component.
-5. Match each form field (by label, ID, name, options) to the most relevant information in the candidate context.
-6. Required vs Optional Fields and Missing Data / "N/A":
+     * ALWAYS fill with TODAY'S DATE: Month "{cur_month_2digit}" (or "{cur_month_name}"), Day "{cur_day_2digit}", Year "{cur_year_4digit}". Single date: "{cur_date_standard}".
+   - Education Timeline Dates (e.g. RPI College Degree):
+     * Start Date: Month: "September" (or "09"), Year: "2023". (DO NOT use May for start month).
+     * End / Expected Graduation Date: Month: "May" (or "05"), Year: "2027".
+   - Profile Availability Dates:
+     * Graduation Date: Candidate's graduation is 05/01/2027 (Month: "May" / "05", Year: "2027", Season: "Spring 2027").
+     * Earliest Start Date: May 2027 (Month: "05", Year: "2027").
+8. OPEN-ENDED QUESTIONS & STATEMENTS OF INTEREST:
+   - When answering open-ended text fields (e.g., "Tell us why you are interested in building an engineering career at [Company]?", "Why this role?", "Statement of Interest", "Why are you interested in [Company]?"):
+   - Write a concise, high-impact, professional 2-3 sentence statement that directly synthesizes Tyler's actual engineering experience (e.g. high-throughput backend services, asynchronous FastAPI APIs, C++, distributed network socket testing, radar signal processing, Applied AI) with the company's core mission (e.g. Datadog -> scalable cloud observability, distributed tracing, reliable telemetry ingestion; SpaceX -> high-reliability aerospace software, distributed embedded control, telemetry processing).
+   - DO NOT output generic, cliché filler like "I am passionate about technology and eager to contribute to innovative projects."
+9. Match each form field (by label, ID, name, options) to the most relevant information in the candidate context.
+10. Required vs Optional Fields and Missing Data / "N/A":
    - OPTIONAL FIELDS (`required: false` or not required):
-     * If the candidate profile contains a clear, useful, and applicable answer (for example, technical skills, LinkedIn/GitHub/website URLs, relevant experience, etc.), fill it accurately using "type", "select", "check", or "upload".
+     * If the candidate profile contains a clear, useful, and applicable answer (for example, technical skills, programming languages, software skills, LinkedIn/GitHub/website URLs, relevant experience, etc.), you MUST fill or select them accurately using "type", "select", "check", or "upload" (e.g. for skills or programming language dropdowns / multi-selects, select the candidate's matching skills like Python, C++, MATLAB, etc. - DO NOT skip skills fields).
      * If the candidate profile does NOT have a useful answer, or the context lists "(N/A)", "None", empty, or no score/data for that field (for example, optional SAT/ACT/GRE scores when not taken, optional Alternate Phone, Apartment/Suite, Graduate GPA, optional second address, etc.):
        -> LEAVE IT BLANK!
        -> Set action: "skip" and value: "" (do NOT type "N/A", "None", or guess/fabricate a fallback value into optional fields; do NOT select "N/A" or other placeholder options in optional dropdowns).
@@ -360,19 +572,19 @@ Instructions:
      * If the candidate context lists "(N/A)", no score, or missing data for a REQUIRED field (excluding privacy/consent which is always affirmative):
        - For dropdowns / multiple choice (`type: "select"` or `type: "radio"`): Look for an option representing "N/A", "Not Applicable", "None", "No", "I did not take this test", "Decline to answer", or similar, and select that option verbatim. If no such option exists, make an educated guess by selecting the most logical standard fallback option. Note that generic unselected placeholders (like "Select...", "Choose...") must NOT be selected.
        - For text inputs (`type: "text"`): Provide a sensible fallback or best guess based on candidate context rather than leaving a required field empty.
-7. Determine the correct 'action' and 'value':
-   - "type": Use for text, tel, email, textarea, or numbers. Provide the text value (e.g. "Tyler", "+1 201-962-5813", etc.).
+11. Determine the correct 'action' and 'value':
+   - "type": Use for text, tel, email, textarea, or numbers. Provide the text value (e.g. "Tyler", "+1 201-962-5813", URLs, etc.).
    - "select": Use for dropdown selections, radio button groups (`type: "radio"`), and multiple choice questions. If the field has a list of 'options' and optionsMode is 'strict' (such as dropdowns, radio button groups, or multiple choice question options), you MUST select one of the options in that list EXACTLY as written, character-for-character (for example, if options are ["Yes", "No"], return "Yes" or "No"; if option is "3.8 out of 4.0", return "3.8 out of 4.0" verbatim). If the field has `multiple: true` (which is a multiple choice / multi-select checkbox group or dropdown field), you can select multiple matching options. To do this, format the `value` as a JSON-serialized list of strings (e.g. `'["Secret", "Top Secret"]'`) or a semicolon-separated string (e.g. `"Secret; Top Secret"`). If optionsMode is 'dynamic' (meaning it is a search typeahead lookup box): if the 'options' list is empty, provide the best search keyword based on context (e.g., "Rensselaer" or "Troy"); if the 'options' list is NOT empty, you MUST choose a search keyword that corresponds to or filters down to one of the options in that list (for example, if options include 'Top Secret' and 'Secret', and the candidate context says 'Active DoD Secret Clearance', you MUST return 'Secret' as the value/search keyword, NOT 'Active DoD Secret Clearance', so that the dropdown filter is successful).
    - "check": Use for standalone checkboxes or boolean questions. Set the value to "true" to select/check, or "false" to uncheck. For radio buttons and multiple choice groups, you can use "select" with the exact option label, or "check" with the option label.
    - "upload": Use for file uploads. ONLY the primary Resume / CV slot (e.g. labeled "Resume", "CV", "Resume/CV", "Attach Resume") should have action: "upload" and value: "resume". You MUST NEVER upload the resume to secondary or other upload slots such as "Cover Letter", "Portfolio", "Portfolio or Cover Letter", "Transcripts", "References", or "Additional Documents". For those other upload slots, use action: "skip" and value: "".
    - "skip": Use for fields that should be left blank/unmodified:
-     * Any optional field (`required: false`) where the candidate has no useful answer / context is (N/A) or missing (except signature/date fields which are dated).
+     * Any optional field (`required: false`) where the candidate has no useful answer / context is (N/A) or missing (except signature/date fields which are dated, and links which are filled).
      * Any field already filled (`alreadyFilled: true`).
      * Optional file upload slots with no candidate document.
      When using "skip", always set action to "skip" and value to "".
-8. Overwrite Protection: If a field is marked with `alreadyFilled: true` (meaning the user has already entered or selected a value in it), you MUST NOT attempt to overwrite it. Instead, you MUST set action to "skip" and value to "" for that field, and note "Field already filled" in the explanation.
-9. Keep the explanations extremely brief and friendly (e.g., "Matched to email", "Optional field left blank", "Agreed to privacy policy", "Dated signature", "Selected clearance", "Uploaded candidate resume", etc.).
-10. Return a structured JSON response matching the FillPlan schema.
+12. Overwrite Protection: If a field is marked with `alreadyFilled: true` (meaning the user has already entered or selected a value in it), you MUST NOT attempt to overwrite it. Instead, you MUST set action to "skip" and value to "" for that field, and note "Field already filled" in the explanation.
+13. Keep the explanations extremely brief and friendly (e.g., "Matched to email", "Optional field left blank", "Agreed to privacy policy", "Dated signature", "Selected clearance", "Uploaded candidate resume", etc.).
+14. Return a structured JSON response matching the FillPlan schema.
 """
 
     # 3. Call OpenAI Structured Outputs completion
@@ -389,10 +601,14 @@ Instructions:
         )
         
         fill_plan = completion.choices[0].message.parsed
+        # Apply targeted LLM self-correction retry loop for any invalid/cross-contaminated options (up to 3 attempts)
+        fill_plan.actions = retry_invalid_fields_with_llm(payload.fields, fill_plan.actions, candidate_context, max_retries=3)
         # Apply deterministic affirmative consent safeguard
         fill_plan.actions = apply_affirmative_consents_safeguard(payload.fields, fill_plan.actions)
         # Apply deterministic resume file upload safeguard
         fill_plan.actions = apply_resume_upload_safeguard(payload.fields, fill_plan.actions)
+        # Apply deterministic candidate links safeguard
+        fill_plan.actions = apply_candidate_links_safeguard(payload.fields, fill_plan.actions)
         print('\n\n', fill_plan)
         return fill_plan
 

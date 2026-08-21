@@ -227,6 +227,25 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /**
+   * Discovers all frame IDs for the active tab (e.g. main frame + Greenhouse/Lever embedded iframes)
+   */
+  async function getTabFrames(tabId: number): Promise<{ frameId: number; url?: string }[]> {
+    return new Promise((resolve) => {
+      if (chrome.webNavigation && chrome.webNavigation.getAllFrames) {
+        chrome.webNavigation.getAllFrames({ tabId }, (frames) => {
+          if (chrome.runtime.lastError || !frames || frames.length === 0) {
+            resolve([{ frameId: 0 }]);
+          } else {
+            resolve(frames.map(f => ({ frameId: f.frameId, url: f.url })));
+          }
+        });
+      } else {
+        resolve([{ frameId: 0 }]);
+      }
+    });
+  }
+
+  /**
    * Single Hero Button: Analyzes Page -> Runs Backend Matching -> Applies Changes Automatically
    */
   btnAutofill.addEventListener("click", async () => {
@@ -255,90 +274,114 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Step 1: Analyze Page
-      chrome.tabs.sendMessage(activeTab.id, { action: "ANALYZE_PAGE" }, async (scanResponse) => {
-        if (chrome.runtime.lastError) {
-          showError("Communication failed. Reload the job application page and try again.");
-          console.error(chrome.runtime.lastError);
-          resetAutofillBtn();
-          return;
-        }
-
-        if (!scanResponse) {
-          showError("Did not receive a response from the content script.");
-          resetAutofillBtn();
-          return;
-        }
-
-        if (scanResponse.error) {
-          showError(scanResponse.error);
-          resetAutofillBtn();
-          return;
-        }
-
-        // Render metrics
-        infoUrl.innerText = scanResponse.url || "-";
-        infoUrl.title = scanResponse.url || "";
-        infoTitle.innerText = scanResponse.title || "-";
-        infoTitle.title = scanResponse.title || "";
-        
-        statInputs.innerText = String(scanResponse.inputsCount ?? 0);
-        statTextareas.innerText = String(scanResponse.textareasCount ?? 0);
-        statSelects.innerText = String(scanResponse.selectsCount ?? 0);
-
-        extractedFields = scanResponse.fields || [];
-        currentJsonPayload = JSON.stringify(extractedFields, null, 2);
-        analysisJson.innerText = currentJsonPayload;
-        
-        resultsSection.classList.remove("hidden");
-        analysisJsonContainer.classList.remove("hidden");
-
-        if (extractedFields.length === 0) {
-          showError("No fillable form inputs found on the current page.");
-          resetAutofillBtn();
-          return;
-        }
-
-        // Step 2: Call Backend AI Fill Plan
-        btnAutofillText.innerText = "Generating fill plan...";
-        try {
-          const requestPayloadObject = { fields: extractedFields };
-          debugRequestPayload = JSON.stringify(requestPayloadObject, null, 2);
-          debugRequestBox.innerText = debugRequestPayload;
-
-          const backendRes = await fetch(`${BACKEND_URL}/api/fill-form`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestPayloadObject)
+      // Step 1: Analyze Page across all frames (top frame + embedded ATS iframes)
+      const frames = await getTabFrames(activeTab.id);
+      const scanPromises = frames.map(frame => {
+        return new Promise<any>((resolve) => {
+          chrome.tabs.sendMessage(activeTab.id!, { action: "ANALYZE_PAGE" }, { frameId: frame.frameId }, (scanResponse) => {
+            if (chrome.runtime.lastError || !scanResponse || scanResponse.error) {
+              resolve(null);
+            } else {
+              if (Array.isArray(scanResponse.fields)) {
+                scanResponse.fields.forEach((f: any) => {
+                  f.frameId = frame.frameId;
+                });
+              }
+              resolve(scanResponse);
+            }
           });
-
-          if (!backendRes.ok) {
-            throw new Error(`Backend HTTP error ${backendRes.status}: ${backendRes.statusText}`);
-          }
-
-          const plan = await backendRes.json();
-          debugResponsePayload = JSON.stringify(plan, null, 2);
-          debugResponseBox.innerText = debugResponsePayload;
-
-          generatedActionsPlan = plan.actions || [];
-          renderPlanList(generatedActionsPlan);
-          aiPlanContainer.classList.remove("hidden");
-          appliedCountBadge.innerText = `${generatedActionsPlan.length} action${generatedActionsPlan.length === 1 ? '' : 's'}`;
-
-          // Step 3: Apply Fill Actions
-          btnAutofillText.innerText = "Applying autofill...";
-          applyPlanToPage(activeTab.id!, activeTab.url || "");
-
-        } catch (err) {
-          showError(`AI Matching failed: ${err instanceof Error ? err.message : String(err)}`);
-          resetAutofillBtn();
-        }
+        });
       });
+
+      const frameResults = (await Promise.all(scanPromises)).filter(Boolean);
+
+      if (frameResults.length === 0) {
+        showError("Communication failed. Reload the job application page and try again.");
+        resetAutofillBtn();
+        return;
+      }
+
+      // Aggregate metrics and fields from all frames
+      let totalInputs = 0;
+      let totalTextareas = 0;
+      let totalSelects = 0;
+      let combinedFields: any[] = [];
+      let displayUrl = activeTab.url || "-";
+      let displayTitle = activeTab.title || "-";
+
+      for (const res of frameResults) {
+        totalInputs += res.inputsCount || 0;
+        totalTextareas += res.textareasCount || 0;
+        totalSelects += res.selectsCount || 0;
+        if (Array.isArray(res.fields) && res.fields.length > 0) {
+          combinedFields.push(...res.fields);
+          if (!displayTitle || displayTitle === "No Title") {
+            displayTitle = res.title || displayTitle;
+          }
+        }
+      }
+
+      infoUrl.innerText = displayUrl;
+      infoUrl.title = displayUrl;
+      infoTitle.innerText = displayTitle;
+      infoTitle.title = displayTitle;
+      
+      statInputs.innerText = String(totalInputs);
+      statTextareas.innerText = String(totalTextareas);
+      statSelects.innerText = String(totalSelects);
+
+      extractedFields = combinedFields;
+      currentJsonPayload = JSON.stringify(extractedFields, null, 2);
+      analysisJson.innerText = currentJsonPayload;
+      
+      resultsSection.classList.remove("hidden");
+      analysisJsonContainer.classList.remove("hidden");
+
+      if (extractedFields.length === 0) {
+        showError("No fillable form inputs found on the current page.");
+        resetAutofillBtn();
+        return;
+      }
+
+      // Step 2: Call Backend AI Fill Plan
+      btnAutofillText.innerText = "Generating fill plan...";
+      try {
+        const requestPayloadObject = { fields: extractedFields };
+        debugRequestPayload = JSON.stringify(requestPayloadObject, null, 2);
+        debugRequestBox.innerText = debugRequestPayload;
+
+        const backendRes = await fetch(`${BACKEND_URL}/api/fill-form`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestPayloadObject)
+        });
+
+        if (!backendRes.ok) {
+          throw new Error(`Backend HTTP error ${backendRes.status}: ${backendRes.statusText}`);
+        }
+
+        const plan = await backendRes.json();
+        debugResponsePayload = JSON.stringify(plan, null, 2);
+        debugResponseBox.innerText = debugResponsePayload;
+
+        generatedActionsPlan = plan.actions || [];
+        renderPlanList(generatedActionsPlan);
+        aiPlanContainer.classList.remove("hidden");
+        appliedCountBadge.innerText = `${generatedActionsPlan.length} action${generatedActionsPlan.length === 1 ? '' : 's'}`;
+
+        // Step 3: Apply Fill Actions
+        btnAutofillText.innerText = "Applying autofill...";
+        applyPlanToPage(activeTab.id!, activeTab.url || "");
+
+      } catch (err) {
+        showError(`AI Matching failed: ${err instanceof Error ? err.message : String(err)}`);
+        resetAutofillBtn();
+      }
     });
   });
 
   /**
-   * Applies the plan actions directly to the content script
+   * Applies the plan actions directly to the content script in their respective frames
    */
   function applyPlanToPage(tabId: number, activeTabUrl: string) {
     if (generatedActionsPlan.length === 0) {
@@ -361,7 +404,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const uploadActions = fillActions.filter(a => a.action === "upload");
       const standardActions = fillActions.filter(a => a.action !== "upload");
-      const totalBatches = uploadActions.length + (standardActions.length > 0 ? 1 : 0);
+
+      // Group standard actions by frameId
+      const standardByFrame = new Map<number, any[]>();
+      standardActions.forEach(a => {
+        const fieldMeta = extractedFields.find(f => f.elementSelector === a.selector);
+        const frameId = a.frameId ?? fieldMeta?.frameId ?? 0;
+        if (!standardByFrame.has(frameId)) {
+          standardByFrame.set(frameId, []);
+        }
+        standardByFrame.get(frameId)!.push({
+          selector: a.selector,
+          fillAction: a.action,
+          value: a.value,
+          label: a.label,
+          optionsMode: fieldMeta ? fieldMeta.optionsMode : undefined
+        });
+      });
+
+      const totalBatches = uploadActions.length + standardByFrame.size;
 
       function checkFinish() {
         if (completed === totalBatches) {
@@ -375,7 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // 1. Handle file uploads (handled individually with base64 data)
+      // 1. Handle file uploads (handled individually per frame with base64 data)
       uploadActions.forEach((planAction) => {
         if (planAction.value === "resume") {
           if (!resume || !resume.data) {
@@ -386,12 +447,15 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
           }
 
+          const fieldMeta = extractedFields.find(f => f.elementSelector === planAction.selector);
+          const frameId = planAction.frameId ?? fieldMeta?.frameId ?? 0;
+
           chrome.tabs.sendMessage(tabId, {
             action: "UPLOAD_FILE",
             selector: planAction.selector,
             fileData: resume.data,
             fileName: resume.name
-          }, (res) => {
+          }, { frameId }, (res) => {
             completed++;
             if (chrome.runtime.lastError || !res || res.error) {
               errors++;
@@ -405,26 +469,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      // 2. Handle standard input / selection fields in a single sequential batch
-      if (standardActions.length > 0) {
-        const fieldsToFill = standardActions.map(a => {
-          const fieldMeta = extractedFields.find(f => f.elementSelector === a.selector);
-          return {
-            selector: a.selector,
-            fillAction: a.action,
-            value: a.value,
-            label: a.label,
-            optionsMode: fieldMeta ? fieldMeta.optionsMode : undefined
-          };
-        });
-
+      // 2. Handle standard input / selection fields in frame-specific batches
+      standardByFrame.forEach((fieldsToFill, frameId) => {
         chrome.tabs.sendMessage(tabId, {
           action: "FILL_ALL_FIELDS",
           fields: fieldsToFill
-        }, (res) => {
+        }, { frameId }, (res) => {
           completed++;
           if (chrome.runtime.lastError || !res) {
-            errors += standardActions.length;
+            errors += fieldsToFill.length;
             console.error("Batch fill error:", chrome.runtime.lastError || "No response received");
           } else if (res.results) {
             res.results.forEach((r: any) => {
@@ -436,7 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           checkFinish();
         });
-      }
+      });
     });
   }
 

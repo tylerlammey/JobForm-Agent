@@ -586,14 +586,23 @@ function getUniqueSelector(element: HTMLElement): string {
 const DROPDOWN_TRIGGER_SELECTOR = [
   '[role="combobox"]',
   '[aria-haspopup="listbox"]',
-  '[aria-haspopup="true"][role="button"]',
   '.select__control',      // react-select
   '.select2-selection',    // select2
   '.chosen-single',        // chosen.js
   '.ng-select-container',  // ng-select
 ].join(', ');
 
-const OPTION_ELEMENT_SELECTOR = '[role="option"], li[id*="option" i], [class*="option" i], [class*="-item" i]';
+const OPTION_ELEMENT_SELECTOR = [
+  '[role="option"]',
+  'li[id*="option" i]',
+  '[class*="option" i]',
+  '[data-automation-id*="option" i]',
+  '[data-automation-id*="promptOption" i]',
+  '.dropdown-item',
+  '.select__option',
+  '.select2-results__option',
+  '.ng-option'
+].join(', ');
 
 // Text that shows up as a rendered "option" but isn't a real, selectable choice —
 // loading placeholders and visual separator rows between groups of options
@@ -809,6 +818,10 @@ async function waitForOptionElements(
   return freshOptions;
 }
 
+function isInsideNavigationOrHeaderFooter(el: HTMLElement): boolean {
+  return !!el.closest('header, nav, footer, [role="navigation"], [role="banner"], [role="contentinfo"], .site-nav, .careers-nav, .navbar, .nav-wrapper, .announcement-banner');
+}
+
 /**
  * Finds top-level custom dropdown triggers that are NOT native <select>/<input>/<textarea>
  * elements (those are handled separately) and are not nested inside another trigger
@@ -822,6 +835,7 @@ function getGenericDropdownTriggers(): HTMLElement[] {
       return false; // already handled by the input/select passes
     }
     if (!isElementVisible(el)) return false;
+    if (isInsideNavigationOrHeaderFooter(el)) return false;
 
     // Skip if this trigger wraps an actual form control (e.g. react-select's
     // .select__control wraps an <input> — that input is already picked up
