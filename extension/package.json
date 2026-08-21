@@ -1,0 +1,16 @@
+{
+  "name": "job-autofiller-extension",
+  "version": "0.1.0",
+  "description": "Chrome Extension scaffold for Job Autofiller",
+  "main": "dist/popup.js",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "esbuild": "^0.20.2",
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,52 @@
+# Node.js
+extension/node_modules/
+extension/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+backend/venv/
+backend/.venv/
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment & Secrets
+.env
+.env.*
+*.env
+!*.env.example
+*.pem
+*.key
+*.cert
+credentials.json
+
+# Candidate Profile & Personal Sensitive Data
+backend/me/context.md
+backend/me/*
+!backend/me/.gitkeep
+context.md
+**/context.md
+backend/scratch/
+*.pdf
+*.docx
+*.doc
+
+# Editor / System
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
