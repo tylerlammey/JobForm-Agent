@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Job Autofiller Scaffold",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "description": "Minimal working scaffold for Chrome Extension ↔ FastAPI communication",
   "permissions": [
     "activeTab",

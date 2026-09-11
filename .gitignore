@@ -30,18 +30,27 @@ pip-delete-this-directory.txt
 credentials.json
 
 # Candidate Profile & Personal Sensitive Data
-backend/me/context.md
+# context.example.md is distributed as a downloadable Release asset, not a repo
+# file -- see README Configuration section. The backend/me/ folder itself is
+# kept (via .gitkeep) so a fresh clone has somewhere to drop context.md, but
+# nothing placed inside it is ever tracked.
 backend/me/*
 !backend/me/.gitkeep
-!backend/me/*.example.md
-!backend/me/context.example.md
 context.md
 **/context.md
-!*.example.md
 backend/scratch/
 *.pdf
 *.docx
 *.doc
+
+# Application Tracker (personal job-search data). Folder itself is kept (via
+# .gitkeep) so a fresh clone has somewhere to drop a spreadsheet; contents aren't.
+backend/data/*
+!backend/data/.gitkeep
+
+# Internal dev notes -- not part of the public fork
+CLAUDE.md
+CHANGELOG.md
 
 # Editor / System
 .DS_Store
