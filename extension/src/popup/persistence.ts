@@ -2,18 +2,7 @@ import type { PopupElements } from "./dom";
 import { appState } from "./state";
 import { renderPlanList } from "./planList";
 
-// Continuously-saved draft of the in-progress "Log Application" form.
-// Deliberately NOT scoped per tab -- unlike a page scan (genuinely tied to
-// one tab), a tracker entry is something the user is actively composing and
-// may need to alt-tab away from mid-entry (to check their resume, re-read
-// the job posting, copy a company name, etc.). Scoping this by tab URL
-// looked correct but actually meant switching tabs looked up a *different*
-// storage key and found nothing -- the old draft wasn't lost, just
-// unreachable from wherever the user switched to. One global key fixes that.
-// Kept separate from state_${activeTabUrl} -- that key is blindly overwritten
-// from appState (which resets to empty every popup load), so folding tracker
-// keystrokes into it would let the very first keystroke wipe an already-saved
-// scan/plan for the tab.
+// Global so each tab doesn't have its own rendition.
 const TRACKER_DRAFT_STORAGE_KEY = "trackerDraft";
 
 export function saveTrackerDraft(els: PopupElements) {
@@ -50,12 +39,6 @@ export function loadTrackerDraft(callback: (draft: any) => void) {
   });
 }
 
-// Save popup state helper. Global (not scoped per tab) -- same reasoning as
-// the tracker draft above: this is "the last scan/plan/debug info", and it
-// should stay visible regardless of which tab the popup is opened from, even
-// if the original tab was closed entirely. Scoping it by tab URL made the
-// Debug Console look wiped the moment you switched tabs or closed the tab
-// the scan ran on, even though nothing was actually lost.
 const POPUP_STATE_STORAGE_KEY = "popupState";
 
 export function savePopupState(els: PopupElements) {
@@ -98,7 +81,6 @@ export function loadPopupState(els: PopupElements) {
         els.appliedCountBadge.innerText = `${appState.generatedActionsPlan.length} action${appState.generatedActionsPlan.length === 1 ? '' : 's'}`;
       }
 
-      // Restore debug payload logs
       appState.debugRequestPayload = state.debugRequestPayload || "No request sent yet. Run \"Autofill Application\".";
       appState.debugResponsePayload = state.debugResponsePayload || "No response received yet.";
       els.debugRequestBox.innerText = appState.debugRequestPayload;

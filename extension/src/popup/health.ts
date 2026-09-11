@@ -1,9 +1,7 @@
 import type { PopupElements } from "./dom";
 import { BACKEND_URL } from "./config";
 
-/**
- * Pings the FastAPI health endpoint to check connection state
- */
+// Pings the FastAPI health endpoint to check connection state.
 export function initHealthCheck(els: PopupElements) {
   async function checkBackendHealth() {
     els.statusDot.className = "status-dot checking";

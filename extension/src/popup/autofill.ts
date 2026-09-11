@@ -6,15 +6,9 @@ import { renderPlanList } from "./planList";
 import { savePopupState } from "./persistence";
 import { getTargetTab } from "./activeTab";
 
-// Caps how many "scan again for newly-revealed fields" passes a single
-// Autofill run will make. Progressive-disclosure forms (a question that
-// reveals a follow-up question once answered) need more than one pass; this
-// bounds it so a form that somehow keeps spawning fields can't loop forever.
+// Change to however many passthroughs it does. Could change to be configurable in future versions.
 const MAX_PASSES = 3;
 
-// Matches the backend's LLM_TIMEOUT_SECONDS (backend/llm_client.py) so the
-// popup gives up and surfaces a clear error at the same point the backend
-// would anyway, instead of spinning indefinitely on a hung request.
 const FILL_PLAN_TIMEOUT_MS = 180000;
 
 function sleep(ms: number): Promise<void> {
@@ -33,9 +27,7 @@ interface ScanAggregate {
   displayTitle: string;
 }
 
-/**
- * Hero Button Flow: Analyzes Page -> Runs Backend Matching -> Applies Changes Automatically
- */
+// Analyzes page, runs backend matching, and applies changes automatically.
 export function initAutofill(els: PopupElements, progress: ProgressController) {
   const { updateProgress } = progress;
 
@@ -69,9 +61,7 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
     }, 4000);
   }
 
-  /**
-   * Discovers all frame IDs for the active tab (e.g. main frame + Greenhouse/Lever embedded iframes)
-   */
+  // Discovers all frame IDs for the active tab.
   async function getTabFrames(tabId: number): Promise<{ frameId: number; url?: string }[]> {
     return new Promise((resolve) => {
       if (chrome.webNavigation && chrome.webNavigation.getAllFrames) {
@@ -88,11 +78,7 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
     });
   }
 
-  /**
-   * Scans every frame of the tab and aggregates the results. Re-run fresh on
-   * every pass (not cached from pass 1) since a lazily-mounted ATS iframe
-   * could appear only after an earlier interaction.
-   */
+  // Scans every frame of the tab and aggregates the results.
   async function scanAllFrames(tabId: number, fallbackTitle: string): Promise<ScanAggregate | null> {
     const frames = await getTabFrames(tabId);
     const scanPromises = frames.map(frame => {
@@ -136,12 +122,7 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
     return { fields: combinedFields, totalInputs, totalTextareas, totalSelects, displayTitle };
   }
 
-  /**
-   * Sends a batch of fields to the backend for a fill plan, aborting after
-   * FILL_PLAN_TIMEOUT_MS so a hung backend/LLM call surfaces a clear error
-   * instead of leaving the popup stuck indefinitely. Debug payloads are
-   * appended (not overwritten) per pass so earlier passes stay visible.
-   */
+  // Sends a batch of fields to the backend for a fill plan.
   async function fetchFillPlan(fields: any[], passLabel: string): Promise<any[]> {
     const requestPayloadObject = { fields };
     const requestJson = JSON.stringify(requestPayloadObject, null, 2);
@@ -184,15 +165,7 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
     return plan.actions || [];
   }
 
-  /**
-   * Applies one pass's plan actions to the content script in their respective
-   * frames. Resolves (never rejects) with an error count -- this is what lets
-   * the multi-pass loop keep going even when some fields in a pass fail.
-   * candidateFields (this pass's newly-scanned fields) are searched before
-   * the full accumulated appState.extractedFields when resolving an action's
-   * frame/optionsMode, since two different frames can legitimately produce
-   * identical elementSelector strings.
-   */
+  // Applies one pass's plan actions to the content script in their respective frames.
   function applyPlanToPage(tabId: number, planActions: any[], candidateFields: any[]): Promise<{ errors: number }> {
     return new Promise((resolve) => {
       const fillActions = planActions.filter((a: any) => a.action !== "skip");
@@ -243,7 +216,6 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
           }
         }
 
-        // 1. Handle file uploads (handled individually per frame with base64 data)
         uploadActions.forEach((planAction: any) => {
           if (planAction.value === "resume") {
             if (!resume || !resume.data) {
@@ -276,7 +248,6 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
           }
         });
 
-        // 2. Handle standard input / selection fields in frame-specific batches
         standardByFrame.forEach((fieldsToFill, frameId) => {
           chrome.tabs.sendMessage(tabId, {
             action: "FILL_ALL_FIELDS",
@@ -332,8 +303,6 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
     const seenFieldKeys = new Set<string>();
     let totalErrors = 0;
 
-    // Fresh run: don't let a second Autofill click in the same popup session
-    // concatenate onto fields/actions/debug payloads left over from a previous run.
     appState.extractedFields = [];
     appState.generatedActionsPlan = [];
     appState.debugRequestPayload = "";
@@ -344,7 +313,6 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
         if (pass > 1) {
           els.btnAutofillText.innerText = `Checking for new fields (pass ${pass}/${MAX_PASSES})...`;
           updateProgress("scanning", `Checking for newly revealed fields (pass ${pass}/${MAX_PASSES})...`, 25);
-          // Give progressive-disclosure DOM/CSS transitions a moment to settle before re-scanning.
           await sleep(300);
         }
 
@@ -356,7 +324,7 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
             resetAutofillBtn();
             return;
           }
-          break; // a later-pass scan failure is a soft-stop -- pass 1 already succeeded
+          break;
         }
 
         if (pass === 1) {
@@ -379,7 +347,7 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
         const newFields = scan.fields.filter((f: any) => !seenFieldKeys.has(fieldKey(f)));
         scan.fields.forEach((f: any) => seenFieldKeys.add(fieldKey(f)));
 
-        if (pass > 1 && newFields.length === 0) break; // nothing new revealed -- done
+        if (pass > 1 && newFields.length === 0) break;
 
         appState.extractedFields = appState.extractedFields.concat(newFields);
         appState.currentJsonPayload = JSON.stringify(appState.extractedFields, null, 2);

@@ -1,7 +1,5 @@
 import type { PopupElements } from "./dom";
 
-// Used by both the autofill flow (after a fresh plan comes back) and
-// persistence (when restoring a previously saved plan for this tab).
 export function renderPlanList(els: PopupElements, planActions: any[]) {
   els.aiPlanList.innerHTML = "";
   planActions.forEach((action) => {

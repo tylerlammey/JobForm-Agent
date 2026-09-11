@@ -1,9 +1,7 @@
 import type { PopupElements } from "./dom";
 
 export function initResume(els: PopupElements) {
-  /**
-   * Loads saved resume metadata from local storage
-   */
+  // Loads saved resume metadata from local storage.
   function loadSavedResume() {
     chrome.storage.local.get("userResume", (result) => {
       if (result.userResume && result.userResume.name && result.userResume.data) {
@@ -16,9 +14,7 @@ export function initResume(els: PopupElements) {
     });
   }
 
-  /**
-   * Saves selected file as base64 data-URL string in local storage
-   */
+  // Saves selected file as base64 data-URL string in local storage.
   els.resumeFileInput.addEventListener("change", () => {
     const file = els.resumeFileInput.files?.[0];
     if (!file) return;

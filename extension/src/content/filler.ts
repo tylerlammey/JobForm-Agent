@@ -17,7 +17,6 @@ function getTargetValues(value: any): string[] {
           return parsed.map(val => String(val).trim());
         }
       } catch (e) {
-        // ignore and fall back to single value
       }
     }
     if (trimmed.includes(";")) {
@@ -28,9 +27,7 @@ function getTargetValues(value: any): string[] {
   return [String(value).trim()];
 }
 
-/**
- * Fills radio groups, checkbox groups, or single checkboxes
- */
+// Fills radio groups, checkbox groups, or single checkboxes.
 async function fillMultipleChoiceOrCheckable(
   element: HTMLElement | null,
   selector: string,
@@ -41,7 +38,6 @@ async function fillMultipleChoiceOrCheckable(
     return { success: true, note: "No target options to select." };
   }
 
-  // 1. Gather all candidate option elements belonging to this group
   let candidateOptions: HTMLElement[] = [];
 
   const nameMatch = selector.match(/name="((?:[^"\\]|\\.)*)"/);
@@ -55,7 +51,6 @@ async function fillMultipleChoiceOrCheckable(
     }
   }
 
-  // If not found via shared name, search enclosing fieldset/group/question containers for sibling checkable options
   if (candidateOptions.length <= 1 && element) {
     let searchEl: HTMLElement | null = element;
     let depth = 0;
@@ -75,7 +70,6 @@ async function fillMultipleChoiceOrCheckable(
     }
   }
 
-  // Fallback to name match or single element
   if (candidateOptions.length === 0) {
     if (nameMatch) {
       const rawName = nameMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
@@ -94,7 +88,6 @@ async function fillMultipleChoiceOrCheckable(
     return { success: false, error: `No radio/checkbox options found for selector: ${selector}` };
   }
 
-  // Check if this candidate collection is a multi-select checkbox group
   const isCheckboxGroup = candidateOptions.length > 1 && candidateOptions.some(
     el => (el instanceof HTMLInputElement && el.type === 'checkbox') || el.getAttribute("role") === "checkbox"
   );
@@ -124,7 +117,6 @@ async function fillMultipleChoiceOrCheckable(
     return { success: true, note: `Set ${matchedCount} checkbox option(s).` };
   }
 
-  // Check if this candidate is a single standalone checkbox
   if (
     candidateOptions.length === 1 &&
     ((candidateOptions[0] instanceof HTMLInputElement && candidateOptions[0].type === 'checkbox') ||
@@ -137,7 +129,6 @@ async function fillMultipleChoiceOrCheckable(
     return { success: true };
   }
 
-  // Radio button groups: find best matching option and check it
   let matchedAny = false;
 
   for (const target of targets) {
@@ -147,7 +138,6 @@ async function fillMultipleChoiceOrCheckable(
 
     let bestMatch: HTMLElement | null = null;
 
-    // A. Exact match against option label or input value
     for (const optEl of candidateOptions) {
       const optLabel = getOptionLabel(optEl).toLowerCase().trim();
       const optVal = (optEl instanceof HTMLInputElement ? optEl.value : (optEl.getAttribute("value") || "")).toLowerCase().trim();
@@ -166,7 +156,6 @@ async function fillMultipleChoiceOrCheckable(
       }
     }
 
-    // B. Substring / fuzzy match fallback
     if (!bestMatch) {
       for (const optEl of candidateOptions) {
         const optLabel = getOptionLabel(optEl).toLowerCase().trim();
@@ -198,7 +187,6 @@ async function fillMultipleChoiceOrCheckable(
           simulateCheckboxToggle(bestMatch, !isTargetFalse);
         }
       } else {
-        // Custom ARIA role="radio" or role="checkbox"
         bestMatch.setAttribute('aria-checked', 'true');
         bestMatch.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
         bestMatch.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
@@ -218,11 +206,7 @@ async function fillMultipleChoiceOrCheckable(
   return { success: false, error: `None of the multiple choice options matched '${targets.join(", ")}'.` };
 }
 
-/**
- * Performs one field fill and always resolves to a result object rather than
- * throwing — this is what lets FILL_ALL_FIELDS keep going through the rest of
- * a form even when one particular field fails.
- */
+// Performs one field fill and always resolves to a result object rather than throwing.
 export async function fillSingleField(
   selector: string,
   fillAction: string,
@@ -234,18 +218,15 @@ export async function fillSingleField(
     return { success: false, error: `Element not found for selector: ${selector}` };
   }
 
-  // Handle skip action
   if (fillAction === "skip") {
     return { success: true, note: "Field skipped (left blank)." };
   }
 
-  // Prevent overwriting if already filled/selected by the user
   if (isElementFilled(element)) {
     return { success: true, note: "Field already has a value, skipping write to prevent overwrite." };
   }
 
   try {
-    // Check if target is a radio/checkbox multiple choice field or check action
     const isCheckable =
       (element instanceof HTMLInputElement && (element.type === "radio" || element.type === "checkbox")) ||
       element.getAttribute("role") === "radio" ||
@@ -272,7 +253,6 @@ export async function fillSingleField(
       }
 
       if (element instanceof HTMLSelectElement) {
-        // Standard HTML Select elements
         let matchedAny = false;
         const isMultiple = element.multiple;
         const targetsToMatch = isMultiple ? targets : [targets[0]];
@@ -317,7 +297,6 @@ export async function fillSingleField(
         return { success: false, error: `None of the options '${targets.join(", ")}' were found in dropdown list.` };
       }
 
-      // Custom Styled Combobox / plain div-or-button dropdowns.
       let clickedAny = false;
       const isReadOnly = (element as HTMLInputElement).readOnly || element.getAttribute("readonly") !== null;
       const isDynamicTypeahead = !isReadOnly && (
@@ -329,9 +308,6 @@ export async function fillSingleField(
       for (const target of targets) {
         let optionElements: HTMLElement[] = [];
         if (element instanceof HTMLInputElement && isDynamicTypeahead) {
-          // Typeahead-capable control: type the target value first so a search-
-          // backed widget (school lookup, city lookup, etc.) actually fetches
-          // and renders matching results, THEN read what showed up.
           const typed = await typeIntoComboboxAndLocateOptions(element, target);
           optionElements = typed.optionElements;
         } else {
@@ -341,10 +317,6 @@ export async function fillSingleField(
 
         if (optionElements.length === 0) {
           if (element instanceof HTMLInputElement) {
-            // Some widgets (school/college search especially) only actually run
-            // their search and render results once Enter is pressed -- typing
-            // alone isn't enough. Give it one more chance to show options
-            // before giving up and just confirming the typed text as-is.
             const beforeEnter = snapshotVisibleOptionElements();
             element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
             const afterEnter = await waitForOptionElements(element, beforeEnter, 800);

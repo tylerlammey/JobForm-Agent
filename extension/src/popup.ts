@@ -1,5 +1,3 @@
-// Popup composition root for JobForm Agent extension.
-// Each feature lives in ./popup/*; this file just wires them together.
 import { queryElements } from "./popup/dom";
 import { initProgress } from "./popup/progress";
 import { initHealthCheck } from "./popup/health";

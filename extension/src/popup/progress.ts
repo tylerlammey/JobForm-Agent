@@ -1,9 +1,7 @@
 import type { PopupElements } from "./dom";
 import type { ProgressStage } from "./state";
 
-/**
- * Progress State Controller
- */
+// Progress state controller.
 export function initProgress(els: PopupElements) {
   function updateProgress(stage: ProgressStage, message?: string, percent?: number) {
     if (stage === "idle") {

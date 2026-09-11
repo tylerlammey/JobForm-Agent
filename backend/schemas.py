@@ -11,7 +11,7 @@ class ExtractedField(BaseModel):
     required: bool
     options: Optional[List[str]] = None
     multiple: Optional[bool] = None
-    optionsMode: Optional[str] = None  # 'strict' | 'dynamic'
+    optionsMode: Optional[str] = None
     elementSelector: str
     alreadyFilled: Optional[bool] = None
     frameId: Optional[int] = None
@@ -23,10 +23,10 @@ class FieldInputPayload(BaseModel):
 
 class FieldAction(BaseModel):
     selector: str
-    action: str        # "type" | "select" | "check" | "upload" | "skip"
-    value: str          # Text to type, select option text, or check boolean
-    label: str          # Original field label
-    explanation: str    # Brief rationale for verification
+    action: str
+    value: str
+    label: str
+    explanation: str
 
 
 class FillPlan(BaseModel):

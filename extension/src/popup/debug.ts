@@ -1,12 +1,7 @@
 import type { PopupElements } from "./dom";
 import { appState } from "./state";
 
-/**
- * Wires one "Copy JSON" button: copies whatever getText() currently returns
- * to the clipboard, with a brief "Copied! ✓" confirmation. Shared by all
- * three debug boxes (scanned fields, last request, last response) so there's
- * one place to fix clipboard-copy behavior instead of three.
- */
+// Wires one "Copy JSON" button: copies whatever getText() currently returns to the clipboard.
 function wireCopyButton(button: HTMLButtonElement, statusEl: HTMLElement, getText: () => string) {
   const defaultLabel = statusEl.innerText;
   button.addEventListener("click", () => {

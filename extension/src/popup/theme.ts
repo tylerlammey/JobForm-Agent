@@ -8,11 +8,7 @@ function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
 }
 
-/**
- * Reads a saved theme preference (chrome.storage.local, shared across the
- * docked popup and any popped-out window), defaulting to the OS/browser's
- * prefers-color-scheme when the user hasn't chosen one explicitly yet.
- */
+// Reads a saved theme preference, defaulting to the OS/browser's prefers-color-scheme.
 export function initTheme(els: PopupElements) {
   chrome.storage.local.get([THEME_STORAGE_KEY], (result) => {
     const stored: Theme | undefined = result[THEME_STORAGE_KEY];

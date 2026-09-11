@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-# Load environment variables from .env on startup (overriding shell environment)
 load_dotenv(override=True)
 
 app = FastAPI(
@@ -11,9 +10,6 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# CORS configuration
-# Using "*" is sufficient for local development to allow the Chrome Extension
-# (which requests from origin chrome-extension://...) to fetch backend resources.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,9 +32,7 @@ app.include_router(tracker_router)
 
 @app.get("/health")
 async def health_check():
-    """
-    Standard health check endpoint to verify backend is active.
-    """
+    """Standard health check endpoint to verify backend is active."""
     return {
         "status": "ok",
         "message": "Backend is running and healthy"
@@ -47,9 +41,7 @@ async def health_check():
 
 @app.get("/api/test")
 async def test_connection():
-    """
-    Simple endpoint for connection verification from the Chrome Extension popup.
-    """
+    """Simple endpoint for connection verification from the Chrome Extension popup."""
     return {
         "status": "connected",
         "message": "Successfully connected to python backend!"
@@ -58,10 +50,7 @@ async def test_connection():
 
 @app.post("/api/fill-form", response_model=FillPlan)
 async def generate_fill_plan(payload: FieldInputPayload):
-    """
-    Takes a list of extracted DOM fields and generates a verified fill plan
-    based on the candidate's context profile file.
-    """
+    """Takes a list of extracted DOM fields and generates a verified fill plan based on the candidate's context profile."""
     print(payload)
 
     try:
@@ -93,18 +82,15 @@ async def generate_fill_plan(payload: FieldInputPayload):
 
     system_prompt = build_system_prompt(candidate_context)
 
-    # Call the configured LLM provider (LLM_PROVIDER in backend/.env; defaults to OpenAI) for a Structured Outputs completion
     try:
-        # Reads the active provider's API key from environment. If it is placeholder or missing, it will raise an error.
         fill_plan = parse_structured(
             system_prompt=system_prompt,
             user_content=f"Here are the form fields extracted from the page:\n{payload.model_dump_json()}",
             output_model=FillPlan,
-            temperature=0.1  # Low temperature for highly deterministic matching
+            temperature=0.1
         )
-        # Apply targeted LLM self-correction retry loop for any invalid/cross-contaminated options (up to 3 attempts)
         fill_plan.actions = retry_invalid_fields_with_llm(payload.fields, fill_plan.actions, candidate_context, max_retries=3)
-        # Apply deterministic post-processing guardrails (see guardrails.py to add/remove one)
+# Guardrails after to stop over anything the retry changed
         fill_plan.actions = apply_guardrails(payload.fields, fill_plan.actions, candidate_context)
         print('\n\n', fill_plan)
         return fill_plan

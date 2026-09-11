@@ -2,25 +2,9 @@ import type { PopupElements } from "./dom";
 import { BACKEND_URL } from "./config";
 import { saveTrackerDraft, clearTrackerDraft, loadTrackerDraft } from "./persistence";
 
-// Which spreadsheet to append to is a user-level preference, not something
-// tied to one tab/draft -- stored under its own key so it survives
-// els.trackerForm.reset() (the field itself lives outside <form> for the
-// same reason) and carries over between different job application tabs.
 const CUSTOM_SHEET_PATH_STORAGE_KEY = "customSheetPath";
 
-/**
- * Application Tracker feature: toggling the logging form open/closed
- * (prefilling Company/Role/Location from the page's own JobPosting structured
- * data and Job Link/Date Applied from the active tab when it's first opened),
- * continuously persisting the in-progress draft so a popup close (e.g.
- * switching browser tabs, which fully tears down a MV3 popup) doesn't lose
- * anything typed, building the entry payload, and submitting it to the
- * backend, which appends a row to the candidate's tracker spreadsheet without
- * ever overwriting it. In generic (soft-coded) mode, if no "Company"-like
- * column was found, the backend responds with status "needs_confirmation"
- * instead of writing -- the user can then click "Push Anyway" to resubmit
- * with force: true.
- */
+// Application Tracker feature: toggles the logging form, prefills it, persists drafts, and submits entries to the backend.
 export function initTracker(els: PopupElements, activeTabId: number | undefined, activeTabUrl: string) {
   let draftSaveTimer: number | undefined;
 
@@ -83,10 +67,6 @@ export function initTracker(els: PopupElements, activeTabId: number | undefined,
     }
   });
 
-  // Continuous draft persistence: fires on every keystroke (input) and every
-  // <select>/date-picker change (change doesn't reliably fire input) so a
-  // popup teardown at any moment -- e.g. switching browser tabs, which fully
-  // destroys a MV3 popup's DOM/JS -- never loses what's been typed.
   els.trackerForm.addEventListener("input", scheduleDraftSave);
   els.trackerForm.addEventListener("change", scheduleDraftSave);
 

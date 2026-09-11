@@ -15,7 +15,6 @@ TRACKER_PATH = os.environ.get(
     os.path.join(os.path.dirname(__file__), "data", "Application_Tracker.xlsx"),
 )
 
-# --- Hardcoded template: the bundled Application_Tracker.xlsx layout ---
 HARDCODED_FILENAME = "Application_Tracker.xlsx"
 HARDCODED_SHEET = "Applications"
 HARDCODED_HEADER_ROW = 3
@@ -26,15 +25,12 @@ HARDCODED_HEADERS = [
     "Next Step", "Follow-up Date", "Job Link", "Notes",
 ]
 
-# Canonical field order, positionally aligned with HARDCODED_HEADERS (A-O).
 COLUMN_ORDER = [
     "company", "role", "location", "remote", "source", "date_applied",
     "deadline", "status", "priority", "contact", "stipend", "next_step",
     "follow_up_date", "job_link", "notes",
 ]
 
-# Header text variants accepted when matching an arbitrary user-provided sheet
-# in generic (soft-coded) mode.
 FIELD_ALIASES = {
     "company": ["company", "company name", "employer"],
     "role": ["role", "role / title", "title", "position", "job title"],
@@ -56,8 +52,6 @@ FIELD_ALIASES = {
 MIN_HEADER_MATCHES = 2
 HEADER_SCAN_ROWS = 10
 
-# Presentation tweaks applied when writing a row -- a raw Job Link URL made
-# rows unreadable, and a narrow Company column clipped longer names.
 JOB_LINK_DISPLAY_TEXT = "Job Link"
 HYPERLINK_FONT = Font(color="0563C1", underline="single")
 COMPANY_COLUMN_MIN_WIDTH = 10.0
@@ -80,14 +74,7 @@ class ApplicationLogEntry(BaseModel):
     follow_up_date: Optional[str] = None
     job_link: Optional[str] = None
     notes: Optional[str] = None
-    # Set by the client to confirm a write in generic mode even though no
-    # "Company"-like column was found (see _append_generic).
     force: bool = False
-    # Optional per-request override so a user can point at their own
-    # spreadsheet from the popup instead of the server-configured default
-    # (TRACKER_PATH / APPLICATIONS_XLSX_PATH). Absolute path on the same
-    # machine the backend runs on -- everything else about how the row gets
-    # written (hardcoded vs generic mode, header matching) is unchanged.
     sheet_path: Optional[str] = None
 
 
@@ -103,13 +90,7 @@ def _looks_like_url(value) -> bool:
 
 
 def _write_field_value(ws, row: int, col_index: int, field_name: str, value) -> None:
-    """Writes one field into its cell, both writer modes go through this so
-    the presentation tweaks below only need to live in one place:
-    - job_link: shown as short "Job Link" text with the real URL kept as the
-      cell's hyperlink target, instead of a long raw URL stretching the row.
-    - company: the column's width grows (never shrinks) to fit whatever's
-      been written, so names don't get visually clipped in Excel.
-    """
+    """Writes one field into its cell, applying the job_link and company presentation tweaks."""
     cell = ws.cell(row=row, column=col_index)
 
     if field_name == "job_link" and value and _looks_like_url(value):
@@ -126,13 +107,9 @@ def _write_field_value(ws, row: int, col_index: int, field_name: str, value) -> 
         if current_width is None or desired_width > current_width:
             ws.column_dimensions[col_letter].width = desired_width
 
-
-# --- Hardcoded writer: unchanged behavior from the original implementation ---
-
+# File with its own name won't be corrupted by a fixed collumn write.
 def _is_hardcoded_template(wb, path: str) -> bool:
-    """True only if the filename matches AND the sheet actually has the exact
-    expected structure -- protects against someone else's differently laid out
-    file coincidentally sharing the template's filename."""
+    """True only if the filename matches and the sheet has the exact expected header structure."""
     if os.path.basename(path) != HARDCODED_FILENAME:
         return False
     if HARDCODED_SHEET not in wb.sheetnames:
@@ -160,8 +137,6 @@ def _append_hardcoded(wb, entry: ApplicationLogEntry) -> dict:
     return {"status": "ok", "row": row, "mode": "hardcoded"}
 
 
-# --- Generic writer: best-effort header-name matching for arbitrary sheets ---
-
 def _normalize(text) -> str:
     return str(text).strip().lower() if text is not None else ""
 
@@ -174,13 +149,9 @@ def _alias_field_for(header_text: str) -> Optional[str]:
 
 
 def _find_header_row(wb):
-    """Scans every sheet's first HEADER_SCAN_ROWS rows for the row that matches
-    the most known field aliases (a sheet literally named 'Applications' wins
-    ties). Returns (worksheet, header_row) or (None, None) if nothing plausible
-    is found. Deliberately does not require a 'Company' match specifically --
-    that's checked separately so a sheet lacking it can still be located."""
+    """Scans every sheet's header rows for the row matching the most known field aliases."""
     sheet_names = sorted(wb.sheetnames, key=lambda n: 0 if n.strip().lower() == "applications" else 1)
-    best = None  # (match_count, worksheet, row)
+    best = None
     for sheet_name in sheet_names:
         ws = wb[sheet_name]
         for row in range(1, min(HEADER_SCAN_ROWS, ws.max_row) + 1):
@@ -223,9 +194,8 @@ def _append_generic(wb, entry: ApplicationLogEntry) -> dict:
     matched_fields = [f for f in COLUMN_ORDER if f in header_map]
     unmatched_fields = [f for f in COLUMN_ORDER if f not in header_map]
 
+# Will not write without a 'company'-like column.
     if "company" not in header_map and not entry.force:
-        # Don't write anything yet -- let the caller decide whether to push
-        # the row anyway once they see what would and wouldn't be captured.
         return {
             "status": "needs_confirmation",
             "matched_fields": matched_fields,
@@ -247,10 +217,7 @@ def _append_generic(wb, entry: ApplicationLogEntry) -> dict:
 
 
 def append_application(entry: ApplicationLogEntry) -> dict:
-    """Loads the existing workbook, appends one row via whichever strategy
-    matches, and saves back to the same path. Never constructs a fresh
-    workbook, so any manual edits, extra sheets, or formatting the user has
-    added are preserved."""
+    """Loads the existing workbook, appends one row via whichever strategy matches, and saves back to the same path."""
     target_path = entry.sheet_path.strip() if entry.sheet_path and entry.sheet_path.strip() else TRACKER_PATH
 
     if not os.path.exists(target_path):
@@ -272,7 +239,7 @@ def append_application(entry: ApplicationLogEntry) -> dict:
         result = _append_generic(wb, entry)
 
     if result["status"] == "needs_confirmation":
-        return result  # nothing written -- no save needed
+        return result
 
     try:
         wb.save(target_path)
@@ -286,8 +253,7 @@ def append_application(entry: ApplicationLogEntry) -> dict:
 
 @router.get("/api/export-tracker")
 async def export_tracker(path: Optional[str] = None):
-    """Returns the tracker workbook as a downloadable file -- the server
-    default, or a specific sheet_path the popup was pointed at, via ?path=."""
+    """Returns the tracker workbook as a downloadable file."""
     target_path = path.strip() if path and path.strip() else TRACKER_PATH
     if not os.path.exists(target_path):
         raise HTTPException(

@@ -1,10 +1,6 @@
 import { resolveElement, cssAttrEscape } from "./selectors";
 
-/**
- * Programmatically attaches a base64-encoded file to a file input for the
- * UPLOAD_FILE message, synthesizing a DataTransfer since file inputs can't be
- * assigned a File object's list directly.
- */
+// Programmatically attaches a base64-encoded file to a file input for the UPLOAD_FILE message.
 export function uploadFile(selector: string, fileData: string, fileName: string): { success?: true; error?: string } {
   try {
     const targetEl = resolveElement(selector);
@@ -16,7 +12,6 @@ export function uploadFile(selector: string, fileData: string, fileName: string)
     if (targetEl instanceof HTMLInputElement && targetEl.type === 'file') {
       input = targetEl;
     } else {
-      // If selector targeted a container/dropzone/label/button, find the associated file input
       input = targetEl.querySelector('input[type="file"]') as HTMLInputElement | null;
       if (!input && targetEl.parentElement) {
         input = targetEl.parentElement.querySelector('input[type="file"]') as HTMLInputElement | null;

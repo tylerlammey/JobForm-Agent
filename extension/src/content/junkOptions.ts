@@ -1,8 +1,5 @@
-// Text that shows up as a rendered "option" but isn't a real, selectable choice —
-// loading placeholders and visual separator rows between groups of options
-// (e.g. SAT vs ACT score scales separated by a row of dashes).
 const JUNK_OPTION_PATTERNS: RegExp[] = [
-  /^[-_.]{3,}$/,                 // separator rows like "-------------------"
+  /^[-_.]{3,}$/,
   /^loading(\.{0,3})?$/i,
   /^please wait(\.{0,3})?$/i,
   /^searching(\.{0,3})?$/i,

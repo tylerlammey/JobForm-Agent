@@ -1,11 +1,5 @@
 import type { JobPostingMeta } from "./types";
 
-/**
- * Reads schema.org JobPosting structured data (script[type="application/ld+json"])
- * that many ATS/job pages embed purely for SEO -- company/role/location straight
- * from the page's own markup, not inferred or guessed.
- */
-
 function asArray<T>(v: T | T[] | undefined | null): T[] {
   if (v === undefined || v === null) return [];
   return Array.isArray(v) ? v : [v];

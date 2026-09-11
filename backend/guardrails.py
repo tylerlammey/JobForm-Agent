@@ -36,21 +36,17 @@ def apply_affirmative_consents_safeguard(fields: List[ExtractedField], actions: 
         if i >= len(actions):
             break
 
-        # Don't alter fields that the user already manually filled
         if field.alreadyFilled:
             continue
 
         search_text = f"{field.label} {field.name} {field.id}".lower()
 
-        # If it's a criminal/sponsorship/relatives/disability/demographic check, do NOT touch it
         if any(neg in search_text for neg in negative_question_triggers):
             continue
 
-        # Check if it matches consent/privacy patterns
         if any(trigger in search_text for trigger in consent_triggers):
             current_action = actions[i]
 
-            # Checkbox case
             if field.type in ["checkbox", "check"]:
                 actions[i] = FieldAction(
                     selector=current_action.selector,
@@ -59,7 +55,6 @@ def apply_affirmative_consents_safeguard(fields: List[ExtractedField], actions: 
                     label=current_action.label,
                     explanation="Affirmatively agreed to terms / privacy policy"
                 )
-            # Select / Radio / Dropdown case
             elif field.options:
                 chosen_opt = None
                 for opt in field.options:
@@ -87,11 +82,7 @@ def apply_affirmative_consents_safeguard(fields: List[ExtractedField], actions: 
 
 
 def apply_resume_upload_safeguard(fields: List[ExtractedField], actions: List[FieldAction], candidate_context: str = "") -> List[FieldAction]:
-    """
-    Ensures that ONLY the dedicated resume/CV file upload slot receives
-    action: "upload" and value: "resume". All secondary file slots (cover letter,
-    portfolio, transcript, references, additional files) must be set to action: "skip".
-    """
+    """Ensures only the dedicated resume/CV upload slot is filled, and secondary file slots are skipped."""
     resume_indicators = [
         "resume", "cv", "curriculum vitae", "attach resume", "upload resume", "upload your resume"
     ]
@@ -101,8 +92,6 @@ def apply_resume_upload_safeguard(fields: List[ExtractedField], actions: List[Fi
         "additional document", "other document", "work sample", "attachment", "sample"
     ]
 
-    # First pass: find the best explicit resume field
-    # (A field where label/name/id contains resume/cv and does NOT contain cover letter/portfolio)
     resume_field_index = -1
     for i, field in enumerate(fields):
         if i >= len(actions):
@@ -117,7 +106,6 @@ def apply_resume_upload_safeguard(fields: List[ExtractedField], actions: List[Fi
             resume_field_index = i
             break
 
-    # If no explicit resume field found, check if there is a generic file upload that is not a non-resume slot
     if resume_field_index == -1:
         for i, field in enumerate(fields):
             if i >= len(actions):
@@ -130,7 +118,6 @@ def apply_resume_upload_safeguard(fields: List[ExtractedField], actions: List[Fi
                 resume_field_index = i
                 break
 
-    # Second pass: strictly enforce upload only on resume_field_index, and skip on all other file / upload slots
     for i, field in enumerate(fields):
         if i >= len(actions):
             break
@@ -151,8 +138,6 @@ def apply_resume_upload_safeguard(fields: List[ExtractedField], actions: List[Fi
                 explanation="Uploaded candidate resume"
             )
         elif is_file_field or is_non_resume:
-            # If this is a secondary file slot (cover letter, portfolio, transcripts) or non-resume slot,
-            # ensure the candidate resume is NOT uploaded into it.
             if actions[i].action == "upload" or actions[i].value == "resume":
                 current_action = actions[i]
                 actions[i] = FieldAction(
@@ -171,14 +156,7 @@ def apply_resume_upload_safeguard(fields: List[ExtractedField], actions: List[Fi
                     label=current_action.label,
                     explanation="Optional document slot left blank"
                 )
-
-    # Some ATS platforms (Workday especially) don't label the upload slot
-    # itself -- they pair one generic, reusable file input with a separate
-    # "Document Type"/"Category" dropdown (options like "Resume", "Cover
-    # Letter", "Transcript"). The checks above never catch this because the
-    # file field's own label says nothing about what it's for. If a
-    # neighboring type-selector was set to a non-resume category, make sure
-    # the adjacent upload slot didn't get the resume anyway.
+# Workday forms were made for the sole point of instilling anger in all that has emotion. Labelless file input with a separate "Document type" dropdown the label check doesn't get. I hate this.
     document_type_hints = ["document type", "attachment type", "file type", "doc type", "category"]
     for i, field in enumerate(fields):
         if i >= len(actions):
@@ -208,9 +186,6 @@ def apply_resume_upload_safeguard(fields: List[ExtractedField], actions: List[Fi
     return actions
 
 
-# Line-level label patterns used to find each link in the candidate's own
-# context.md text (see backend/me/context.example.md's "Personal Information"
-# section) -- deliberately independent of any one person's actual URLs.
 LINK_LABEL_PATTERNS = {
     "linkedin": [r"linkedin"],
     "github": [r"\bgithub\b"],
@@ -219,8 +194,7 @@ LINK_LABEL_PATTERNS = {
 
 
 def _extract_profile_url(candidate_context: str, label_patterns: List[str]) -> Optional[str]:
-    """Finds the first line in the candidate's profile matching one of the given
-    label patterns and pulls the URL out of it (e.g. "- **LinkedIn:** [x](https://...)")."""
+    """Finds the first line in the candidate's profile matching a label pattern and extracts its URL."""
     for line in candidate_context.splitlines():
         lower = line.lower()
         if any(re.search(pattern, lower) for pattern in label_patterns):
@@ -231,10 +205,7 @@ def _extract_profile_url(candidate_context: str, label_patterns: List[str]) -> O
 
 
 def apply_candidate_links_safeguard(fields: List[ExtractedField], actions: List[FieldAction], candidate_context: str = "") -> List[FieldAction]:
-    """
-    Ensures that text fields requesting social profiles / links (LinkedIn, Website / Portfolio, GitHub)
-    are populated with the candidate's own URLs (parsed from their context.md), even if marked optional.
-    """
+    """Ensures social profile/link fields are populated with the candidate's own URLs from context.md."""
     linkedin_url = _extract_profile_url(candidate_context, LINK_LABEL_PATTERNS["linkedin"])
     github_url = _extract_profile_url(candidate_context, LINK_LABEL_PATTERNS["github"])
     website_url = _extract_profile_url(candidate_context, LINK_LABEL_PATTERNS["website"])
@@ -247,15 +218,13 @@ def apply_candidate_links_safeguard(fields: List[ExtractedField], actions: List[
 
         search_text = f"{field.label} {field.name} {field.id}".lower()
 
-        # Don't apply to file upload inputs or checkboxes
         if field.type in ["file", "checkbox", "check"]:
             continue
 
         current_action = actions[i]
         if current_action.action != "skip" and current_action.value:
-            continue  # LLM already filled this in -- don't override
+            continue
 
-        # LinkedIn
         if "linkedin" in search_text and linkedin_url:
             actions[i] = FieldAction(
                 selector=current_action.selector,
@@ -264,7 +233,6 @@ def apply_candidate_links_safeguard(fields: List[ExtractedField], actions: List[
                 label=current_action.label,
                 explanation="Matched to LinkedIn profile"
             )
-        # GitHub
         elif ("github" in search_text or "git_hub" in search_text) and github_url:
             actions[i] = FieldAction(
                 selector=current_action.selector,
@@ -273,7 +241,6 @@ def apply_candidate_links_safeguard(fields: List[ExtractedField], actions: List[
                 label=current_action.label,
                 explanation="Matched to GitHub profile"
             )
-        # Personal Website / Portfolio
         elif any(w in search_text for w in ["website", "portfolio url", "personal site", "personal webpage", "online portfolio"]) and website_url:
             actions[i] = FieldAction(
                 selector=current_action.selector,
@@ -286,11 +253,6 @@ def apply_candidate_links_safeguard(fields: List[ExtractedField], actions: List[
     return actions
 
 
-# Deterministic post-processing safeguards applied (in order) to every fill plan,
-# after the LLM has produced its initial actions. To disable a safeguard, comment
-# out or remove its entry here -- no changes needed elsewhere. To add a new one,
-# write a `(fields, actions, candidate_context) -> actions` function above and
-# append it below.
 GUARDRAILS: List[Callable[[List[ExtractedField], List[FieldAction], str], List[FieldAction]]] = [
     apply_affirmative_consents_safeguard,
     apply_resume_upload_safeguard,

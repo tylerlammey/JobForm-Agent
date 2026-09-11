@@ -1,18 +1,12 @@
-// Every DOM element the popup touches, queried exactly once here. A typo'd
-// id shows up as a single compile error instead of a silent null somewhere
-// deep in a feature module.
 export interface PopupElements {
-  // Status Header
   statusDot: HTMLElement;
   statusText: HTMLElement;
   btnThemeToggle: HTMLButtonElement;
   btnPopOut: HTMLButtonElement;
 
-  // Hero Button
   btnAutofill: HTMLButtonElement;
   btnAutofillText: HTMLElement;
 
-  // Progress Bar Components
   progressSection: HTMLElement;
   progressBarFill: HTMLElement;
   progressStatusText: HTMLElement;
@@ -23,7 +17,6 @@ export interface PopupElements {
   line1: HTMLElement;
   line2: HTMLElement;
 
-  // Results & Plan Section
   resultsSection: HTMLElement;
   aiPlanContainer: HTMLElement;
   aiPlanList: HTMLElement;
@@ -36,7 +29,6 @@ export interface PopupElements {
   statSelects: HTMLElement;
   analysisError: HTMLElement;
 
-  // Debug Console Elements
   analysisJson: HTMLElement;
   btnCopyJson: HTMLButtonElement;
   copyStatus: HTMLElement;
@@ -47,17 +39,14 @@ export interface PopupElements {
   btnCopyResponse: HTMLButtonElement;
   copyResponseStatus: HTMLElement;
 
-  // Resume Elements
   resumeFileInput: HTMLInputElement;
   resumeFilename: HTMLElement;
 
-  // Tab Navigation Elements
   tabBtnMain: HTMLButtonElement;
   tabBtnDebug: HTMLButtonElement;
   tabContentMain: HTMLElement;
   tabContentDebug: HTMLElement;
 
-  // Application Tracker Elements
   btnExportTracker: HTMLButtonElement;
   btnToggleTracker: HTMLButtonElement;
   trackerToggleText: HTMLElement;
@@ -84,7 +73,6 @@ export interface PopupElements {
   tfJobLink: HTMLInputElement;
   tfNotes: HTMLTextAreaElement;
 
-  // Footer
   footerVersion: HTMLElement;
 }
 

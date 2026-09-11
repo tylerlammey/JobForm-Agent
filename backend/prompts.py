@@ -1,9 +1,3 @@
-"""
-Every prompt string sent to the LLM lives here -- the main matching prompt
-and the self-correction retry prompt (see retry.py) -- so main.py stays
-about orchestration (load context, call the LLM, apply guardrails, return)
-rather than being dominated by wall-of-text instructions.
-"""
 from datetime import datetime
 
 

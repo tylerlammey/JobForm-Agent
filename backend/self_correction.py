@@ -1,10 +1,3 @@
-"""
-Self-correction retry loop: for fields whose value doesn't match one of that
-field's own options (a common failure mode -- the LLM either hallucinates a
-value or cross-contaminates from a neighboring question), re-queries the LLM
-for just the broken fields with targeted feedback, up to a few attempts, then
-falls back to a deterministic option choice if it still isn't fixed.
-"""
 import json
 from typing import List
 
@@ -14,10 +7,7 @@ from prompts import build_retry_prompt
 
 
 def is_option_valid(field: ExtractedField, action: FieldAction) -> bool:
-    """
-    Checks if an action's selected value exists in the field's options list
-    and is not an unselected placeholder.
-    """
+    """Checks if an action's selected value exists in the field's options list and is not an unselected placeholder."""
     if not field.options or len(field.options) == 0:
         return True
 
@@ -29,12 +19,10 @@ def is_option_valid(field: ExtractedField, action: FieldAction) -> bool:
         if not val:
             return not field.required
 
-        # Placeholders are never valid selections
         placeholder_terms = ["select...", "select an option", "choose...", "choose an option", "please select", "please choose", "-- select --"]
         if val.lower() in placeholder_terms:
             return False
 
-        # Multi-select dropdown or checkbox group
         if field.multiple:
             parsed_vals = []
             if val.startswith("[") and val.endswith("]"):
@@ -49,7 +37,6 @@ def is_option_valid(field: ExtractedField, action: FieldAction) -> bool:
 
             return all(v in field.options and v.lower() not in placeholder_terms for v in parsed_vals if v)
         else:
-            # Single select must be exactly in options and not a placeholder
             return val in field.options and val.lower() not in placeholder_terms
 
     return True
@@ -73,11 +60,7 @@ def retry_invalid_fields_with_llm(
     candidate_context: str,
     max_retries: int = 3
 ) -> List[FieldAction]:
-    """
-    Identifies fields with invalid or cross-contaminated option values
-    and re-runs ONLY those specific fields through the LLM with targeted feedback,
-    capped at max_retries attempts.
-    """
+    """Identifies fields with invalid option values and re-runs only those through the LLM, capped at max_retries attempts."""
     for attempt in range(1, max_retries + 1):
         invalid_indices = find_invalid_option_indices(fields, actions)
         if not invalid_indices:
@@ -109,7 +92,6 @@ def retry_invalid_fields_with_llm(
             if len(corrected_actions) == len(invalid_indices):
                 for k, orig_idx in enumerate(invalid_indices):
                     act = corrected_actions[k]
-                    # Normalize action to select if field has options and action is not skip/check
                     if fields[orig_idx].options and act.action not in ["select", "skip", "check"]:
                         act.action = "select"
                     actions[orig_idx] = act
@@ -118,7 +100,6 @@ def retry_invalid_fields_with_llm(
             print(f"Error during LLM retry attempt {attempt}: {e}")
             break
 
-    # If any fields remain invalid after max_retries, apply a deterministic fallback from field.options
     remaining_invalid = find_invalid_option_indices(fields, actions)
     for idx in remaining_invalid:
         f = fields[idx]

@@ -5,10 +5,7 @@ import { cssAttrEscape, getUniqueSelector, resolveElement } from "./selectors";
 import { filterJunkOptions } from "./junkOptions";
 import { isMultiValueField, getGenericDropdownTriggers, openDropdownAndLocateOptions, closeDropdown } from "./dropdown";
 
-/**
- * Scans the current page's form fields and builds the AnalysisResponse sent
- * back to the popup for the ANALYZE_PAGE message.
- */
+// Scans the current page's form fields and builds the AnalysisResponse sent back to the popup.
 export async function analyzePage(): Promise<AnalysisResponse | { error: string }> {
   try {
     const allInputs = Array.from(document.querySelectorAll("input")) as HTMLInputElement[];
@@ -31,9 +28,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
 
     const fields: ExtractedField[] = [];
 
-    // -------------------------------------------------------------------
-    // 1. Multiple Choice: Radio Button Groups (<input type="radio"> and role="radio")
-    // -------------------------------------------------------------------
     const radioInputs = visibleInputs.filter(i => i.type === 'radio');
     const customRadios = (Array.from(document.querySelectorAll('[role="radio"]')) as HTMLElement[]).filter(isElementVisible);
     const allRadios: HTMLElement[] = [...radioInputs, ...customRadios.filter(r => !(r instanceof HTMLInputElement))];
@@ -96,9 +90,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
       });
     });
 
-    // -------------------------------------------------------------------
-    // 2. Checkboxes (<input type="checkbox"> and role="checkbox")
-    // -------------------------------------------------------------------
     const checkboxInputs = visibleInputs.filter(i => i.type === 'checkbox');
     const customCheckboxes = (Array.from(document.querySelectorAll('[role="checkbox"]')) as HTMLElement[]).filter(isElementVisible);
     const allCheckboxes: HTMLElement[] = [...checkboxInputs, ...customCheckboxes.filter(c => !(c instanceof HTMLInputElement))];
@@ -124,7 +115,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
         }
         checkboxGroupMap.get(groupKey)!.push(cb);
       } else {
-        // Standalone Checkbox
         fields.push({
           id: cb.id || (cb instanceof HTMLInputElement ? cb.name : "") || `checkbox_${fields.length}`,
           name: (cb instanceof HTMLInputElement ? cb.name : "") || cb.id || "",
@@ -141,7 +131,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
       }
     });
 
-    // Process grouped checkboxes
     checkboxGroupMap.forEach((groupCbs, groupKey) => {
       const firstCb = groupCbs[0];
       const groupName = firstCb instanceof HTMLInputElement ? firstCb.name : "";
@@ -185,9 +174,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
       });
     });
 
-    // -------------------------------------------------------------------
-    // 3. Standard Inputs (text, email, tel, number, file, date, typeahead comboboxes)
-    // -------------------------------------------------------------------
     const standardInputs = visibleInputs.filter(i => i.type !== 'radio' && i.type !== 'checkbox');
     for (const input of standardInputs) {
       const skipTypes = ['button', 'submit', 'reset', 'image', 'hidden'];
@@ -274,9 +260,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
       });
     }
 
-    // -------------------------------------------------------------------
-    // 4. Textareas
-    // -------------------------------------------------------------------
     visibleTextareas.forEach((textarea) => {
       fields.push({
         id: textarea.id || "",
@@ -290,9 +273,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
       });
     });
 
-    // -------------------------------------------------------------------
-    // 5. Native Select Dropdowns
-    // -------------------------------------------------------------------
     visibleSelects.forEach((select) => {
       const options = filterJunkOptions(
         Array.from(select.options)
@@ -315,9 +295,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
       });
     });
 
-    // -------------------------------------------------------------------
-    // 6. Generic Custom Dropdown Triggers
-    // -------------------------------------------------------------------
     const genericTriggers = getGenericDropdownTriggers();
     for (const trigger of genericTriggers) {
       let options: string[] | undefined = undefined;
@@ -347,7 +324,6 @@ export async function analyzePage(): Promise<AnalysisResponse | { error: string 
       });
     }
 
-    // Sort fields by DOM document position so the AI sees the natural top-down form order
     fields.sort((a, b) => {
       const elA = resolveElement(a.elementSelector);
       const elB = resolveElement(b.elementSelector);

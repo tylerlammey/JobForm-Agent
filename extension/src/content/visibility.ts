@@ -1,15 +1,12 @@
 import { cssAttrEscape } from "./selectors";
 import { isJunkOptionText } from "./junkOptions";
 
-/**
- * Checks if an element is visible in the viewport/DOM
- */
+// Checks if an element is visible in the viewport/DOM.
 export function isElementVisible(el: HTMLElement): boolean {
   const style = window.getComputedStyle(el);
 
   const isFileInput = el instanceof HTMLInputElement && el.type === 'file';
 
-  // Exemption: custom combobox inputs/triggers can be opacity 0 or 0px width/height by style design
   const isDropdownOrCombobox =
     el.getAttribute("role") === "combobox" ||
     el.classList.contains("select__input") ||
@@ -24,9 +21,6 @@ export function isElementVisible(el: HTMLElement): boolean {
     el.getAttribute("role") === "radio" ||
     el.getAttribute("role") === "checkbox";
 
-  // File inputs: ATS platforms (Greenhouse, Lever, Workday, Ashby) frequently style file inputs
-  // with display:none, opacity:0, or 0x0 size and wrap them in custom dropzone buttons.
-  // As long as the enclosing form/container is visible (not inside a closed modal/tab), it is valid.
   if (isFileInput) {
     let parent = el.parentElement;
     while (parent) {
@@ -40,7 +34,6 @@ export function isElementVisible(el: HTMLElement): boolean {
   }
 
   if (style.display === 'none' || style.visibility === 'hidden') {
-    // If it's a styled native checkable input, check if its parent label/wrapper is visible
     if (isCheckable && el.parentElement) {
       const parentStyle = window.getComputedStyle(el.parentElement);
       if (parentStyle.display !== 'none' && parentStyle.visibility !== 'hidden') {
@@ -50,12 +43,10 @@ export function isElementVisible(el: HTMLElement): boolean {
     return false;
   }
 
-  // If not a dropdown control, checkable input, or file input, filter out opacity 0
   if (!isDropdownOrCombobox && !isCheckable && style.opacity === '0') {
     return false;
   }
 
-  // Traverse up parents to check display / visibility
   let parent = el.parentElement;
   while (parent) {
     const parentStyle = window.getComputedStyle(parent);
@@ -65,12 +56,10 @@ export function isElementVisible(el: HTMLElement): boolean {
     parent = parent.parentElement;
   }
 
-  // HTMLInputElement hidden types are physically invisible
   if (el instanceof HTMLInputElement && el.type === 'hidden') {
     return false;
   }
 
-  // Basic check for dimensions (except for checkboxes, radios, and dropdown controls)
   if (!isCheckable && !isDropdownOrCombobox) {
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) {
@@ -122,7 +111,6 @@ export function isElementFilled(el: HTMLElement): boolean {
     return val !== "" && text !== "" && !isJunkOptionText(text) && !text.toLowerCase().includes("select");
   }
 
-  // Custom styled combobox triggers or plain div-or-button dropdown triggers
   const isDropdownOrCombobox =
     el.getAttribute("role") === "combobox" ||
     el.classList.contains("select__input") ||
