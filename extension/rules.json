@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        { "header": "x-frame-options", "operation": "remove" },
+        { "header": "X-Frame-Options", "operation": "remove" },
+        { "header": "content-security-policy", "operation": "remove" },
+        { "header": "Content-Security-Policy", "operation": "remove" },
+        { "header": "frame-options", "operation": "remove" },
+        { "header": "cross-origin-opener-policy", "operation": "remove" },
+        { "header": "Cross-Origin-Opener-Policy", "operation": "remove" }
+      ],
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://www.instagram.com/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||instagram.com",
+      "resourceTypes": ["sub_frame", "xmlhttprequest", "other", "script"]
+    }
+  }
+]

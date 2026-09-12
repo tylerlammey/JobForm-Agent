@@ -3,7 +3,6 @@ import json
 
 BACKEND_URL = "http://127.0.0.1:8000"
 
-# Mock extracted fields payload mimicking a real job application form
 mock_fields = [
     {
         "id": "first_name",
@@ -330,16 +329,13 @@ try:
         print("\n=== AI MATCHING FILL PLAN GENERATED ===")
         print(json.dumps(res_data, indent=2))
         print("========================================\n")
-        
-        # Verify specific test assertions
+
         actions = res_data.get("actions", [])
-        
-        # Check Gender
+
         gender_act = next((a for a in actions if a["selector"] == "#gender_select"), None)
         if gender_act:
             print(f"Gender Action: {gender_act['action']} -> '{gender_act['value']}' ({gender_act['explanation']})")
-            
-        # Check Disability Status
+
         disability_act = next((a for a in actions if a["selector"] == "#disability_select"), None)
         if disability_act:
             print(f"Disability Action: {disability_act['action']} -> '{disability_act['value']}' ({disability_act['explanation']})")
@@ -347,7 +343,6 @@ try:
         print("\n=== RUNNING SAT/ACT/GRE MAPPING SCENARIO CHECKS ===")
         all_passed = True
 
-        # Verify completeness (exactly one action per field, matching input array length)
         expected_len = len(mock_fields)
         actual_len = len(actions)
         if expected_len == actual_len:
@@ -355,8 +350,7 @@ try:
         else:
             print(f"[FAIL] Completeness check -> expected {expected_len} actions, got {actual_len}")
             all_passed = False
-        
-        # Check First Name Overwrite Protection (should be skipped since alreadyFilled is True)
+
         first_name_act = next((a for a in actions if a["selector"] == "#first_name"), None)
         if first_name_act and first_name_act["action"] == "skip":
             print("[PASS] Overwrite Protection -> correctly skipped pre-filled First Name field")
@@ -364,7 +358,6 @@ try:
             print(f"[FAIL] Overwrite Protection (Expected skip for pre-filled First Name, got: {first_name_act})")
             all_passed = False
 
-        # Check SAT (Optional field with N/A context -> should skip / leave blank)
         sat_act = next((a for a in actions if a["selector"] == "#sat_select"), None)
         if sat_act and sat_act["action"] == "skip":
             print("[PASS] SAT Score -> correctly skipped / left blank for optional field with N/A context")
@@ -372,7 +365,6 @@ try:
             print(f"[FAIL] SAT Score (Expected action: 'skip', got: {sat_act})")
             all_passed = False
 
-        # Check ACT (Optional field with N/A context -> should skip / leave blank)
         act_act = next((a for a in actions if a["selector"] == "#act_select"), None)
         if act_act and act_act["action"] == "skip":
             print("[PASS] ACT Score -> correctly skipped / left blank for optional field with N/A context")
@@ -380,15 +372,13 @@ try:
             print(f"[FAIL] ACT Score (Expected action: 'skip', got: {act_act})")
             all_passed = False
 
-        # Check GRE (Optional field with N/A context -> should skip / leave blank)
         gre_act = next((a for a in actions if a["selector"] == "#gre_select"), None)
         if gre_act and gre_act["action"] == "skip":
             print("[PASS] GRE Score -> correctly skipped / left blank for optional field with N/A context")
         else:
             print(f"[FAIL] GRE Score (Expected action: 'skip', got: {gre_act})")
             all_passed = False
-            
-        # Check Alternate Phone (Optional field with N/A context -> should skip / leave blank)
+
         alt_phone_act = next((a for a in actions if a["selector"] == "#alternate_phone"), None)
         if alt_phone_act and alt_phone_act["action"] == "skip":
             print("[PASS] Alternate Phone -> correctly skipped / left blank for optional field with N/A context")
@@ -396,7 +386,6 @@ try:
             print(f"[FAIL] Alternate Phone (Expected action: 'skip', got: {alt_phone_act})")
             all_passed = False
 
-        # Check Dynamic Clearance Option Selection
         clearance_select_act = next((a for a in actions if a["selector"] == "#clearance_select"), None)
         if clearance_select_act and clearance_select_act["action"] == "select" and clearance_select_act["value"] == "Secret":
             print("[PASS] Dynamic Clearance Select -> matched verbatim option 'Secret'")
@@ -404,7 +393,6 @@ try:
             print(f"[FAIL] Dynamic Clearance Select (Expected select 'Secret', got: {clearance_select_act})")
             all_passed = False
 
-        # Check Multiple Choice Option Selection
         skills_act = next((a for a in actions if a["selector"] == "#skills_select"), None)
         if skills_act and skills_act["action"] == "select":
             val = skills_act["value"]
@@ -419,7 +407,7 @@ try:
                 parsed_vals = [v.strip() for v in val.split(";")]
             else:
                 parsed_vals = [val.strip()]
-            
+
             valid_candidate_skills = {"Python", "MATLAB", "VBA", "C++", "HTML/CSS"}
             matched_candidate_skills = [s for s in parsed_vals if s in valid_candidate_skills]
             if len(matched_candidate_skills) >= 2:
@@ -430,8 +418,7 @@ try:
         else:
             print(f"[FAIL] Multiple Choice Select (Expected select action for #skills_select, got: {skills_act})")
             all_passed = False
-            
-        # Check Radio Group Multiple Choice Questions
+
         work_auth_act = next((a for a in actions if a["selector"] == 'input[name="work_auth"]'), None)
         if work_auth_act and work_auth_act["value"] == "Yes":
             print(f"[PASS] Work Auth Radio -> correctly matched 'Yes' ({work_auth_act['explanation']})")
@@ -453,7 +440,6 @@ try:
             print(f"[FAIL] Relocation Radio (Expected 'Yes', got: {relocation_act})")
             all_passed = False
 
-        # Check Privacy Policy & Candidate Consent Radios
         privacy_und_act = next((a for a in actions if a["selector"] == 'input[name="privacy_understand"]'), None)
         if privacy_und_act and privacy_und_act["value"] == "Yes":
             print(f"[PASS] Privacy Understanding Radio -> correctly matched 'Yes' ({privacy_und_act['explanation']})")
@@ -468,7 +454,6 @@ try:
             print(f"[FAIL] Privacy Consent Radio (Expected 'Yes', got: {privacy_con_act})")
             all_passed = False
 
-        # Check File Uploads (Resume vs Optional Cover Letter)
         resume_act = next((a for a in actions if a["selector"] == "#resume_file_input"), None)
         if resume_act and resume_act["action"] == "upload" and resume_act["value"] == "resume":
             print(f"[PASS] Resume Upload -> correctly mapped to action 'upload' and value 'resume' ({resume_act['explanation']})")
@@ -490,7 +475,6 @@ try:
             print(f"[FAIL] Portfolio or Cover Letter (Expected action: 'skip', got: {portfolio_cover_act})")
             all_passed = False
 
-        # Check LinkedIn Profile & Website (Should be filled even if optional)
         linkedin_act = next((a for a in actions if a["selector"] == "#linkedin_profile"), None)
         if linkedin_act and linkedin_act["action"] == "type" and "linkedin.com/in/tyler-lammey" in linkedin_act["value"]:
             print(f"[PASS] LinkedIn Profile -> correctly matched URL '{linkedin_act['value']}' ({linkedin_act['explanation']})")
@@ -505,7 +489,6 @@ try:
             print(f"[FAIL] Website (Expected type with tylerlammey.com, got: {website_act})")
             all_passed = False
 
-        # Check College Start Month (Should be September, NOT May)
         start_month_act = next((a for a in actions if a["selector"] == "#edu_start_month"), None)
         if start_month_act and start_month_act["action"] == "select" and start_month_act["value"] == "September":
             print(f"[PASS] Education Start Month -> correctly matched 'September' ({start_month_act['explanation']})")
@@ -513,7 +496,6 @@ try:
             print(f"[FAIL] Education Start Month (Expected select 'September', got: {start_month_act})")
             all_passed = False
 
-        # Check Open-Ended Why Company Question
         why_comp_act = next((a for a in actions if a["selector"] == "#why_company_question"), None)
         if why_comp_act and why_comp_act["action"] == "type" and len(why_comp_act["value"]) > 20 and "passionate about technology and eager" not in why_comp_act["value"].lower():
             print(f"[PASS] Why Company Statement -> generated tailored response: \"{why_comp_act['value']}\" ({why_comp_act['explanation']})")
@@ -521,7 +503,6 @@ try:
             print(f"[FAIL] Why Company Statement (Expected non-cliche response, got: {why_comp_act})")
             all_passed = False
 
-        # Check SpaceX Location, SAT Score, Employment History & Citizenship
         loc_act = next((a for a in actions if a["selector"] == "#candidate_location"), None)
         if loc_act and loc_act["action"] == "type" and "Ridgewood" in loc_act["value"]:
             print(f"[PASS] Location -> correctly matched location '{loc_act['value']}' ({loc_act['explanation']})")
