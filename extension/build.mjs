@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const isWatch = process.argv.includes('--watch');
 
 async function copyStaticFiles() {
-  const files = ['manifest.json', 'popup.html', 'popup.css'];
+  const files = ['manifest.json', 'popup.html', 'popup.css', 'rules.json'];
   for (const file of files) {
     const srcPath = path.join(__dirname, file);
     const destPath = path.join(__dirname, 'dist', file);

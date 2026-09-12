@@ -10,12 +10,16 @@ import { loadPopupState } from "./popup/persistence";
 import { getTargetTab } from "./popup/activeTab";
 import { initTheme } from "./popup/theme";
 import { initPopOut } from "./popup/popout";
+import { initReels } from "./popup/reels";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const els = queryElements();
-  els.footerVersion.innerText = `v${chrome.runtime.getManifest().version}`;
+  try {
+    els.footerVersion.innerText = `v${chrome?.runtime?.getManifest?.()?.version || "1.3.0"}`;
+  } catch (_) {}
 
   const progress = initProgress(els);
+  const reels = initReels(els);
 
   initTheme(els);
   initPopOut(els);
@@ -23,7 +27,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initResume(els);
   initTabs(els);
   initDebugConsole(els);
-  initAutofill(els, progress);
+  initAutofill(els, progress, reels);
 
   const activeTab = await getTargetTab();
   initTracker(els, activeTab?.id, activeTab?.url || "");

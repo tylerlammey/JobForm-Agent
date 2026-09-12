@@ -4,10 +4,13 @@
 
 :root {
   /* Color Palette - Light Liquid Glass */
-  --bg-mesh-1: #eef2ff;       /* Soft Indigo Tint */
-  --bg-mesh-2: #e0e7ff;       /* Electric Periwinkle */
-  --bg-mesh-3: #f0fdf4;       /* Subtle Mint Glow */
-  
+  --bg-mesh-1: #eef2ff;
+  /* Soft Indigo Tint */
+  --bg-mesh-2: #e0e7ff;
+  /* Electric Periwinkle */
+  --bg-mesh-3: #f0fdf4;
+  /* Subtle Mint Glow */
+
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-bg-subtle: rgba(255, 255, 255, 0.52);
   --glass-bg-hover: rgba(255, 255, 255, 0.88);
@@ -18,22 +21,32 @@
 
   /* Surfaces -- every "translucent/solid white" panel and border in the app
      goes through these so a dark theme only has to redefine them once. */
-  --surface-1: rgba(255, 255, 255, 0.65);   /* translucent card-interior panels */
-  --surface-2: #ffffff;                     /* solid buttons / active pills */
-  --surface-tabs: rgba(241, 245, 249, 0.7); /* segmented tab bar background */
+  --surface-1: rgba(255, 255, 255, 0.65);
+  /* translucent card-interior panels */
+  --surface-2: #ffffff;
+  /* solid buttons / active pills */
+  --surface-tabs: rgba(241, 245, 249, 0.7);
+  /* segmented tab bar background */
   --border-subtle: rgba(226, 232, 240, 0.8);
-  --track-bg: #e2e8f0;                      /* progress track, stepper dots/lines */
+  --track-bg: #e2e8f0;
+  /* progress track, stepper dots/lines */
   --body-gradient: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f1f5f9 100%);
 
   /* Brand Accents */
-  --primary: #4f46e5;         /* Vibrant Indigo */
+  --primary: #4f46e5;
+  /* Vibrant Indigo */
   --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
   --primary-glow: 0 8px 24px -4px rgba(79, 70, 229, 0.35);
-  --primary-tint-bg: rgba(99, 102, 241, 0.08);      /* badge/icon-avatar backgrounds */
-  --primary-tint-border: rgba(99, 102, 241, 0.15);  /* badge borders, subtle hover shadows */
-  --primary-tint-strong: rgba(99, 102, 241, 0.3);   /* stronger hover borders */
-  --primary-focus-ring: rgba(79, 70, 229, 0.12);    /* input focus ring */
-  --primary-shadow-strong: rgba(79, 70, 229, 0.45); /* hero button hover shadow */
+  --primary-tint-bg: rgba(99, 102, 241, 0.08);
+  /* badge/icon-avatar backgrounds */
+  --primary-tint-border: rgba(99, 102, 241, 0.15);
+  /* badge borders, subtle hover shadows */
+  --primary-tint-strong: rgba(99, 102, 241, 0.3);
+  /* stronger hover borders */
+  --primary-focus-ring: rgba(79, 70, 229, 0.12);
+  /* input focus ring */
+  --primary-shadow-strong: rgba(79, 70, 229, 0.45);
+  /* hero button hover shadow */
 
   --liquid-cyan: #06b6d4;
   --liquid-blue: #3b82f6;
@@ -43,16 +56,19 @@
   --liquid-rose: #f43f5e;
 
   /* Typography */
-  --text-main: #0f172a;       /* Deep Slate */
-  --text-muted: #64748b;      /* Slate 500 */
-  --text-light: #94a3b8;      /* Slate 400 */
+  --text-main: #0f172a;
+  /* Deep Slate */
+  --text-muted: #64748b;
+  /* Slate 500 */
+  --text-light: #94a3b8;
+  /* Slate 400 */
 
   /* UI Tokens */
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
   --radius-pill: 9999px;
-  
+
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --transition-smooth: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -110,7 +126,10 @@ body {
   font-family: var(--font-family);
   background: var(--body-gradient);
   color: var(--text-main);
-  width: 380px;
+  width: 410px;
+  min-height: 600px;
+  max-height: 600px;
+  height: 600px;
   overflow-x: hidden;
   position: relative;
   -webkit-font-smoothing: antialiased;
@@ -615,12 +634,10 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.5) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.5) 50%,
+      rgba(255, 255, 255, 0) 100%);
   animation: shimmer 1.5s infinite;
 }
 
@@ -1093,21 +1110,199 @@ body {
 
 /* Animations */
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse-glow {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.15); opacity: 0.6; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Reels / Brainrot Entertainment Mode Styles
+   ========================================================================== */
+
+#btn-reels-toggle.active {
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--primary);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.35);
+}
+
+body.reels-active {
+  overflow: hidden !important;
+}
+
+.reels-card.reels-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Floating Close Button on Top Right */
+.reels-floating-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+  transition: var(--transition-smooth);
+}
+
+.reels-floating-close-btn:hover {
+  background: rgba(239, 68, 68, 0.9);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  transform: scale(1.1);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.45);
+}
+
+.reels-floating-close-btn:active {
+  transform: scale(0.94);
+}
+
+/* Small completion indicator (Appears when autofill finishes) */
+.reels-completion-pill {
+  position: absolute;
+  top: 12px;
+  right: 52px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 50;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45);
+  animation: fadeIn 0.25s ease-out;
+  transition: var(--transition-smooth);
+}
+
+.reels-completion-pill:hover {
+  background: #10b981;
+  transform: scale(1.04);
+}
+
+.reels-completion-pill .reels-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+  animation: pulse-glow 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.instagram-fullscreen-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  overflow: hidden;
+}
+
+.instagram-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #000000;
+}
+
+.reels-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #f1f5f9;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 5;
+  transition: opacity 0.3s ease;
+}
+
+.ig-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #fd1d1d;
+  border-right-color: #fcb045;
+  border-bottom-color: #833ab4;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }

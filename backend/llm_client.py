@@ -10,6 +10,8 @@ if LLM_PROVIDER in ("openai_compatible", "compatible"):
     LLM_PROVIDER = "openai"
 
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+if "OPENAI_BASE_URL" in os.environ and not os.environ["OPENAI_BASE_URL"].strip():
+    del os.environ["OPENAI_BASE_URL"]
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "").strip() or None
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-haiku-4-5")
 

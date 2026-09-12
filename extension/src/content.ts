@@ -3,6 +3,10 @@ import { uploadFile } from "./content/upload";
 import { fillSingleField } from "./content/filler";
 import { sleep } from "./content/nativeEvents";
 import { extractJobMeta } from "./content/jobMeta";
+import { initInstagramReelsController } from "./content/instagramReels";
+
+// Initialize Instagram Reels helper if on instagram.com
+initInstagramReelsController();
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "ANALYZE_PAGE") {

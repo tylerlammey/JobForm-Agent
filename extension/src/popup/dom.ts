@@ -3,6 +3,7 @@ export interface PopupElements {
   statusText: HTMLElement;
   btnThemeToggle: HTMLButtonElement;
   btnPopOut: HTMLButtonElement;
+  btnReelsToggle: HTMLButtonElement;
 
   btnAutofill: HTMLButtonElement;
   btnAutofillText: HTMLElement;
@@ -16,6 +17,13 @@ export interface PopupElements {
   stepInject: HTMLElement;
   line1: HTMLElement;
   line2: HTMLElement;
+
+  reelsSection: HTMLElement;
+  btnReelsClose: HTMLButtonElement;
+  reelsStatusPill: HTMLElement;
+  reelsStatusText: HTMLElement;
+  instagramFrame: HTMLIFrameElement;
+  reelsLoadingPlaceholder: HTMLElement;
 
   resultsSection: HTMLElement;
   aiPlanContainer: HTMLElement;
@@ -82,6 +90,7 @@ export function queryElements(): PopupElements {
     statusText: document.getElementById("status-text") as HTMLElement,
     btnThemeToggle: document.getElementById("btn-theme-toggle") as HTMLButtonElement,
     btnPopOut: document.getElementById("btn-pop-out") as HTMLButtonElement,
+    btnReelsToggle: document.getElementById("btn-reels-toggle") as HTMLButtonElement,
 
     btnAutofill: document.getElementById("btn-autofill") as HTMLButtonElement,
     btnAutofillText: document.getElementById("btn-autofill-text") as HTMLElement,
@@ -95,6 +104,13 @@ export function queryElements(): PopupElements {
     stepInject: document.getElementById("step-inject") as HTMLElement,
     line1: document.getElementById("line-1") as HTMLElement,
     line2: document.getElementById("line-2") as HTMLElement,
+
+    reelsSection: document.getElementById("reels-section") as HTMLElement,
+    btnReelsClose: document.getElementById("btn-reels-close") as HTMLButtonElement,
+    reelsStatusPill: document.getElementById("reels-status-pill") as HTMLElement,
+    reelsStatusText: document.getElementById("reels-status-text") as HTMLElement,
+    instagramFrame: document.getElementById("instagram-frame") as HTMLIFrameElement,
+    reelsLoadingPlaceholder: document.getElementById("reels-loading-placeholder") as HTMLElement,
 
     resultsSection: document.getElementById("results-section") as HTMLElement,
     aiPlanContainer: document.getElementById("ai-plan-container") as HTMLElement,

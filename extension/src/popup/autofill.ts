@@ -27,8 +27,10 @@ interface ScanAggregate {
   displayTitle: string;
 }
 
+import type { ReelsController } from "./reels";
+
 // Analyzes page, runs backend matching, and applies changes automatically.
-export function initAutofill(els: PopupElements, progress: ProgressController) {
+export function initAutofill(els: PopupElements, progress: ProgressController, reels?: ReelsController) {
   const { updateProgress } = progress;
 
   function showError(msg: string) {
@@ -278,6 +280,7 @@ export function initAutofill(els: PopupElements, progress: ProgressController) {
     els.btnAutofillText.innerText = "Analyzing page...";
     els.analysisError.classList.add("hidden");
     updateProgress("scanning", "Scanning form inputs across page frames...", 25);
+    reels?.showReels();
 
     const activeTab = await getTargetTab();
     if (!activeTab || !activeTab.id) {

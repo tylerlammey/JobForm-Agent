@@ -56,11 +56,24 @@ export function initProgress(els: PopupElements) {
       els.stepPlan.className = "step-pill completed";
       els.line2.className = "step-line completed";
       els.stepInject.className = "step-pill completed";
+      if (els.reelsStatusPill) {
+        els.reelsStatusPill.classList.remove("hidden");
+        if (els.reelsStatusText) {
+          els.reelsStatusText.innerText = "Form Filled!";
+        }
+      }
     } else if (stage === "error") {
       els.progressBarFill.style.width = "100%";
       els.progressBarFill.style.background = "var(--liquid-rose)";
       els.progressPercentBadge.innerText = "Error";
       els.progressStatusText.innerText = message || "Process encountered an error.";
+      if (els.reelsStatusPill) {
+        els.reelsStatusPill.classList.add("hidden");
+      }
+    }
+
+    if (stage !== "complete" && els.reelsStatusPill) {
+      els.reelsStatusPill.classList.add("hidden");
     }
   }
 
