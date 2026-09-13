@@ -30,11 +30,7 @@ export function initTracker(els: PopupElements, activeTabId: number | undefined,
     });
   }
 
-  function expandTrackerForm() {
-    els.trackerForm.classList.remove("hidden");
-    els.trackerSheetPathRow.classList.remove("hidden");
-    els.trackerToggleText.innerText = "− Hide Form";
-
+  function initTrackerDefaults() {
     if (!els.tfDateApplied.value) {
       els.tfDateApplied.value = new Date().toISOString().slice(0, 10);
     }
@@ -44,28 +40,35 @@ export function initTracker(els: PopupElements, activeTabId: number | undefined,
     prefillJobMetaFromPage();
   }
 
+  function expandTrackerForm() {
+    els.trackerForm.classList.remove("hidden");
+    initTrackerDefaults();
+  }
+
   function collapseTrackerForm() {
-    els.trackerForm.classList.add("hidden");
-    els.trackerSheetPathRow.classList.add("hidden");
-    els.trackerToggleText.innerText = "+ Log Application";
+    // Keep form accessible in the dedicated tab
   }
 
   chrome.storage.local.get([CUSTOM_SHEET_PATH_STORAGE_KEY], (result) => {
     const savedPath = result[CUSTOM_SHEET_PATH_STORAGE_KEY];
-    if (savedPath) els.tfSheetPath.value = savedPath;
+    if (savedPath) {
+      els.tfSheetPath.value = savedPath;
+      els.trackerSheetPathRow.classList.remove("hidden");
+    }
   });
 
   els.tfSheetPath.addEventListener("change", () => {
     chrome.storage.local.set({ [CUSTOM_SHEET_PATH_STORAGE_KEY]: els.tfSheetPath.value.trim() });
   });
 
-  els.btnToggleTracker.addEventListener("click", () => {
-    if (els.trackerForm.classList.contains("hidden")) {
-      expandTrackerForm();
-    } else {
-      collapseTrackerForm();
+  els.btnToggleTracker?.addEventListener("click", () => {
+    els.trackerSheetPathRow.classList.toggle("hidden");
+    if (!els.trackerSheetPathRow.classList.contains("hidden")) {
+      els.tfSheetPath.focus();
     }
   });
+
+  initTrackerDefaults();
 
   els.trackerForm.addEventListener("input", scheduleDraftSave);
   els.trackerForm.addEventListener("change", scheduleDraftSave);

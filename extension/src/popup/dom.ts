@@ -51,9 +51,12 @@ export interface PopupElements {
   resumeFilename: HTMLElement;
 
   tabBtnMain: HTMLButtonElement;
+  tabBtnTracker: HTMLButtonElement;
   tabBtnDebug: HTMLButtonElement;
   tabContentMain: HTMLElement;
+  tabContentTracker: HTMLElement;
   tabContentDebug: HTMLElement;
+  btnOpenTracker?: HTMLButtonElement | null;
 
   btnExportTracker: HTMLButtonElement;
   btnToggleTracker: HTMLButtonElement;
@@ -138,9 +141,12 @@ export function queryElements(): PopupElements {
     resumeFilename: document.getElementById("resume-filename") as HTMLElement,
 
     tabBtnMain: document.getElementById("tab-btn-main") as HTMLButtonElement,
+    tabBtnTracker: document.getElementById("tab-btn-tracker") as HTMLButtonElement,
     tabBtnDebug: document.getElementById("tab-btn-debug") as HTMLButtonElement,
     tabContentMain: document.getElementById("tab-content-main") as HTMLElement,
+    tabContentTracker: document.getElementById("tab-content-tracker") as HTMLElement,
     tabContentDebug: document.getElementById("tab-content-debug") as HTMLElement,
+    btnOpenTracker: document.getElementById("btn-open-tracker") as HTMLButtonElement | null,
 
     btnExportTracker: document.getElementById("btn-export-tracker") as HTMLButtonElement,
     btnToggleTracker: document.getElementById("btn-toggle-tracker") as HTMLButtonElement,
