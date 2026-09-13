@@ -27,31 +27,34 @@
         </div>
         <div class="brand-text">
           <h1>JobForm Agent</h1>
-          <span class="version-tag">AI Autofill</span>
         </div>
       </div>
       <div class="header-actions">
-        <div class="status-pill" id="backend-status-pill">
+        <div class="status-pill" id="backend-status-pill" title="Backend Server Status">
           <span class="status-dot disconnected" id="status-dot"></span>
           <span class="status-text" id="status-text">Checking...</span>
         </div>
-        <button id="btn-reels-toggle" type="button" class="icon-btn" title="Toggle Reels / Brainrot Entertainment Mode">
+        <button id="btn-reels-toggle" type="button" class="icon-btn" title="Toggle Reels Entertainment Mode">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg>
         </button>
-        <button id="btn-theme-toggle" type="button" class="icon-btn" title="Toggle dark mode">
+        <button id="btn-theme-toggle" type="button" class="icon-btn" title="Toggle Dark/Light Mode">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
-        <button id="btn-pop-out" type="button" class="icon-btn" title="Open in a movable window">
+        <button id="btn-pop-out" type="button" class="icon-btn" title="Open in Detached Window">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </button>
       </div>
     </header>
 
-    <!-- Segmented Tab Navigation -->
+    <!-- 3-Segment Tab Navigation -->
     <nav class="tabs-segmented">
       <button class="tab-btn active" id="tab-btn-main">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        <span>Workspace</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>Autofill</span>
+      </button>
+      <button class="tab-btn" id="tab-btn-tracker">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Tracker</span>
       </button>
       <button class="tab-btn tab-btn-minor" id="tab-btn-debug" title="Debug Console">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -59,33 +62,27 @@
       </button>
     </nav>
 
-    <!-- Tab 1: Main Workspace -->
+    <!-- Tab 1: Autofill Workspace -->
     <main id="tab-content-main" class="tab-pane">
       
-      <!-- Resume Card -->
-      <section class="glass-section resume-card">
-        <div class="section-label-row">
-          <span class="section-label">Candidate Resume</span>
-          <span class="glass-tag">Autofill Source</span>
-        </div>
-        <div class="resume-content">
-          <div class="resume-meta">
-            <div class="resume-avatar">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            </div>
-            <div class="resume-info">
-              <span id="resume-filename" class="resume-filename">No file selected</span>
-              <span class="resume-hint">PDF or DOCX used for ATS file upload</span>
-            </div>
+      <!-- Sleek Resume Selector Bar -->
+      <section class="glass-section resume-bar">
+        <div class="resume-bar-left">
+          <div class="resume-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           </div>
-          <label for="resume-file" class="btn-glass-upload">
-            <span>Browse</span>
-            <input type="file" id="resume-file" accept=".pdf,.doc,.docx" class="hidden-file-input" />
-          </label>
+          <div class="resume-info">
+            <span class="resume-label">Active Resume</span>
+            <span id="resume-filename" class="resume-filename">No file selected</span>
+          </div>
         </div>
+        <label for="resume-file" class="btn-glass-upload" title="Upload PDF or DOCX resume">
+          <span>Browse</span>
+          <input type="file" id="resume-file" accept=".pdf,.doc,.docx" class="hidden-file-input" />
+        </label>
       </section>
 
-      <!-- Action & Progress Section -->
+      <!-- Primary Autofill Hero Action -->
       <section class="glass-section action-card">
         <button id="btn-autofill" class="btn-liquid-hero">
           <div class="hero-liquid-shine"></div>
@@ -96,7 +93,7 @@
           <div class="spinner" id="autofill-spinner"></div>
         </button>
 
-        <!-- Dynamic Liquid Progress Bar -->
+        <!-- Liquid Progress Bar -->
         <div id="progress-section" class="progress-container hidden">
           <div class="progress-header">
             <div class="progress-status-indicator">
@@ -116,7 +113,7 @@
           <div class="stepper-row">
             <div class="step-pill" id="step-scan">
               <span class="step-dot"></span>
-              <span class="step-name">Scan Form</span>
+              <span class="step-name">Scan</span>
             </div>
             <div class="step-line" id="line-1"></div>
             <div class="step-pill" id="step-plan">
@@ -126,7 +123,7 @@
             <div class="step-line" id="line-2"></div>
             <div class="step-pill" id="step-inject">
               <span class="step-dot"></span>
-              <span class="step-name">Fill & Upload</span>
+              <span class="step-name">Fill</span>
             </div>
           </div>
         </div>
@@ -134,95 +131,60 @@
         <div id="analysis-error" class="glass-error-box hidden"></div>
       </section>
 
-      <!-- Real Instagram Reels Drawer (Fullscreen Viewport) -->
-      <section id="reels-section" class="reels-card reels-fullscreen hidden">
-        <!-- Floating Exit Button on Top Right -->
-        <button id="btn-reels-close" class="reels-floating-close-btn" title="Exit Reels & Return to Form" type="button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-
-        <!-- Small Completion Indicator (Visible when autofill completes) -->
-        <div id="reels-status-pill" class="reels-completion-pill hidden" title="Autofill finished! Click to review form">
-          <span class="reels-status-dot"></span>
-          <span id="reels-status-text">Form Filled!</span>
-        </div>
-
-        <div class="instagram-fullscreen-container">
-          <div id="reels-loading-placeholder" class="reels-loading-overlay">
-            <div class="ig-spinner"></div>
-            <span>Connecting to Instagram Reels...</span>
-          </div>
-          <iframe
-            id="instagram-frame"
-            src="about:blank"
-            class="instagram-frame"
-            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-            allowfullscreen
-          ></iframe>
-        </div>
-      </section>
-
       <!-- Live Page & Applied Results -->
       <section id="results-section" class="glass-section results-card hidden">
-        <div class="section-label-row">
-          <span class="section-label">Page Form Metrics</span>
+        <div class="results-top-row">
+          <div class="results-left">
+            <div class="results-success-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="results-text-block">
+              <span class="results-title">Form Autofilled</span>
+              <span class="results-sub truncate" id="info-title">-</span>
+            </div>
+          </div>
           <span id="stat-total-badge" class="glass-tag tag-success">0 fields mapped</span>
         </div>
 
-        <div class="page-meta-row">
-          <div class="page-meta-item">
-            <span class="meta-label">Page:</span>
-            <span class="meta-val truncate" id="info-title">-</span>
-          </div>
-          <div class="page-meta-item">
-            <span class="meta-label">URL:</span>
-            <span class="meta-val truncate" id="info-url">-</span>
-          </div>
-        </div>
-
-        <div class="stats-capsules">
-          <div class="stat-capsule">
-            <span class="capsule-num" id="stat-inputs">0</span>
-            <span class="capsule-label">Inputs</span>
-          </div>
-          <div class="stat-capsule">
-            <span class="capsule-num" id="stat-selects">0</span>
-            <span class="capsule-label">Dropdowns</span>
-          </div>
-          <div class="stat-capsule">
-            <span class="capsule-num" id="stat-textareas">0</span>
-            <span class="capsule-label">Text Areas</span>
-          </div>
-        </div>
-
-        <!-- Applied AI Actions Plan -->
-        <div id="ai-plan-container" class="plan-wrapper hidden">
-          <div class="plan-heading">
-            <span>Executed Actions</span>
+        <!-- Collapsible Applied Actions Drawer -->
+        <details id="ai-plan-container" class="plan-wrapper hidden">
+          <summary class="plan-heading">
+            <span>Review Applied Actions</span>
             <span id="applied-count-badge" class="plan-badge">0 actions</span>
-          </div>
+          </summary>
           <div id="ai-plan-list" class="plan-items-scroll"></div>
-        </div>
+        </details>
+
+        <!-- Shortcut to switch straight to Tracker tab -->
+        <button id="btn-open-tracker" type="button" class="btn-tracker-shortcut">
+          <span>Log Application in Tracker</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
       </section>
 
-      <!-- Application Tracker Logging -->
+    </main>
+
+    <!-- Tab 2: Application Tracker -->
+    <main id="tab-content-tracker" class="tab-pane hidden">
       <section class="glass-section tracker-card">
         <div class="section-label-row">
-          <span class="section-label">Application Tracker</span>
+          <div class="tracker-title-col">
+            <span class="section-label">Application Tracker</span>
+          </div>
           <div class="tracker-header-actions">
-            <button id="btn-export-tracker" type="button" class="btn-glass-copy" title="Download Excel Tracker">⇩ Export</button>
-            <button id="btn-toggle-tracker" type="button" class="btn-glass-copy">
-              <span id="tracker-toggle-text">+ Log Application</span>
+            <button id="btn-export-tracker" type="button" class="btn-glass-copy" title="Download Excel Spreadsheet">⇩ Export</button>
+            <button id="btn-toggle-tracker" type="button" class="btn-glass-copy" title="Toggle custom spreadsheet path">
+              <span id="tracker-toggle-text">⚙ Path</span>
             </button>
           </div>
         </div>
 
         <div id="tracker-sheet-path-row" class="form-field hidden">
-          <label for="tf-sheet-path">Custom Sheet Path <span class="meta-label">(optional — leave blank for the default)</span></label>
+          <label for="tf-sheet-path">Custom Sheet Path <span class="meta-label">(optional — leave blank for default)</span></label>
           <input type="text" id="tf-sheet-path" placeholder="C:\Users\you\Documents\MyTracker.xlsx" />
         </div>
 
-        <form id="tracker-form" class="tracker-form hidden">
+        <form id="tracker-form" class="tracker-form">
           <div class="form-grid">
             <div class="form-field">
               <label for="tf-company">Company *</label>
@@ -317,16 +279,40 @@
           </button>
         </form>
       </section>
-
     </main>
 
-    <!-- Tab 2: Debug Console (Isolated) -->
+    <!-- Tab 3: Debug Console -->
     <main id="tab-content-debug" class="tab-pane hidden">
+      <!-- DOM Form Elements Breakdown -->
       <section class="glass-section debug-card">
         <div class="debug-pane-header">
           <div class="debug-title">
-            <span class="section-label">Scanned Form Fields Payload</span>
-            <span class="debug-sub">Raw structured payload extracted from active DOM frames</span>
+            <span class="section-label">Active Tab Form Elements</span>
+            <span class="debug-sub truncate" id="info-url">-</span>
+          </div>
+        </div>
+
+        <div class="stats-capsules">
+          <div class="stat-capsule">
+            <span class="capsule-num" id="stat-inputs">0</span>
+            <span class="capsule-label">Inputs</span>
+          </div>
+          <div class="stat-capsule">
+            <span class="capsule-num" id="stat-selects">0</span>
+            <span class="capsule-label">Dropdowns</span>
+          </div>
+          <div class="stat-capsule">
+            <span class="capsule-num" id="stat-textareas">0</span>
+            <span class="capsule-label">Text Areas</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="glass-section debug-card">
+        <div class="debug-pane-header">
+          <div class="debug-title">
+            <span class="section-label">Scanned Form Fields</span>
+            <span class="debug-sub">Raw structured payload extracted from frames</span>
           </div>
           <button id="btn-copy-json" class="btn-glass-copy" title="Copy JSON">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -368,6 +354,35 @@
         </div>
       </section>
     </main>
+
+    <!-- Real Instagram Reels Drawer (Kept 100% Unchanged) -->
+    <section id="reels-section" class="reels-card reels-fullscreen hidden">
+      <!-- Floating Exit Button on Top Right -->
+      <button id="btn-reels-close" class="reels-floating-close-btn" title="Exit Reels & Return to Form" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <!-- Small Completion Indicator (Visible when autofill completes) -->
+      <div id="reels-status-pill" class="reels-completion-pill hidden" title="Autofill finished! Click to review form">
+        <span class="reels-status-dot"></span>
+        <span id="reels-status-text">Form Filled!</span>
+      </div>
+
+      <div class="instagram-fullscreen-container">
+        <div id="reels-loading-placeholder" class="reels-loading-overlay">
+          <div class="ig-spinner"></div>
+          <span>Connecting to Instagram Reels...</span>
+        </div>
+        <iframe
+          id="instagram-frame"
+          src="about:blank"
+          class="instagram-frame"
+          scrolling="no"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </section>
 
     <!-- Footer -->
     <footer class="app-footer">

@@ -1,17 +1,27 @@
 import type { PopupElements } from "./dom";
+import { appState } from "./state";
+
+export type TabName = "main" | "tracker" | "debug";
 
 export function initTabs(els: PopupElements) {
-  els.tabBtnMain.addEventListener("click", () => {
-    els.tabBtnMain.classList.add("active");
-    els.tabBtnDebug.classList.remove("active");
-    els.tabContentMain.classList.remove("hidden");
-    els.tabContentDebug.classList.add("hidden");
-  });
+  function selectTab(tab: TabName) {
+    els.tabBtnMain.classList.toggle("active", tab === "main");
+    els.tabBtnTracker.classList.toggle("active", tab === "tracker");
+    els.tabBtnDebug.classList.toggle("active", tab === "debug");
 
-  els.tabBtnDebug.addEventListener("click", () => {
-    els.tabBtnDebug.classList.add("active");
-    els.tabBtnMain.classList.remove("active");
-    els.tabContentDebug.classList.remove("hidden");
-    els.tabContentMain.classList.add("hidden");
-  });
+    els.tabContentMain.classList.toggle("hidden", tab !== "main");
+    els.tabContentTracker.classList.toggle("hidden", tab !== "tracker");
+    els.tabContentDebug.classList.toggle("hidden", tab !== "debug");
+  }
+
+  els.tabBtnMain.addEventListener("click", () => selectTab("main"));
+  els.tabBtnTracker.addEventListener("click", () => selectTab("tracker"));
+  els.tabBtnDebug.addEventListener("click", () => selectTab("debug"));
+
+  if (els.btnOpenTracker) {
+    els.btnOpenTracker.addEventListener("click", () => selectTab("tracker"));
+  }
+
+  return { selectTab };
 }
+

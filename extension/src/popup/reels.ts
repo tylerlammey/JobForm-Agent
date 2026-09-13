@@ -1,6 +1,6 @@
 import type { PopupElements } from "./dom";
 
-const INSTAGRAM_REELS_URL = "https://www.instagram.com/?next=/reels/";
+const INSTAGRAM_REELS_URL = "https://www.instagram.com/reels/";
 const INSTAGRAM_DIRECT_REELS = "https://www.instagram.com/reels/";
 const INSTAGRAM_HOME_URL = "https://www.instagram.com/";
 
@@ -20,6 +20,7 @@ export function initReels(els: PopupElements): ReelsController {
   let isFrameLoaded = false;
 
   function showReels() {
+    document.documentElement.classList.add("reels-active");
     document.body.classList.add("reels-active");
     els.reelsSection.classList.remove("hidden");
     els.btnReelsToggle.classList.add("active");
@@ -34,11 +35,12 @@ export function initReels(els: PopupElements): ReelsController {
     setTimeout(() => {
       try {
         els.instagramFrame.focus();
-      } catch (_) {}
+      } catch (_) { }
     }, 400);
   }
 
   function hideReels() {
+    document.documentElement.classList.remove("reels-active");
     document.body.classList.remove("reels-active");
     els.reelsSection.classList.add("hidden");
     els.btnReelsToggle.classList.remove("active");
@@ -63,7 +65,7 @@ export function initReels(els: PopupElements): ReelsController {
     // 1. Send postMessage to content script to try client-side click
     try {
       els.instagramFrame.contentWindow?.postMessage({ action: "IG_GO_TO_REELS" }, "*");
-    } catch (_) {}
+    } catch (_) { }
     // 2. Set direct reels URL
     els.instagramFrame.src = INSTAGRAM_DIRECT_REELS;
   }
@@ -77,38 +79,38 @@ export function initReels(els: PopupElements): ReelsController {
     // 1. Send postMessage to the iframe content script
     try {
       els.instagramFrame.contentWindow?.postMessage({ action: "IG_NEXT_REEL" }, "*");
-    } catch (_) {}
+    } catch (_) { }
 
     // 2. Broadcast via chrome.runtime
     try {
       chrome.runtime.sendMessage({ action: "IG_NEXT_REEL" }, () => {
-        if (chrome.runtime.lastError) {}
+        if (chrome.runtime.lastError) { }
       });
-    } catch (_) {}
+    } catch (_) { }
 
     // 3. Focus iframe so native ArrowDown also works
     try {
       els.instagramFrame.focus();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   function prevReel() {
     // 1. Send postMessage to the iframe content script
     try {
       els.instagramFrame.contentWindow?.postMessage({ action: "IG_PREV_REEL" }, "*");
-    } catch (_) {}
+    } catch (_) { }
 
     // 2. Broadcast via chrome.runtime
     try {
       chrome.runtime.sendMessage({ action: "IG_PREV_REEL" }, () => {
-        if (chrome.runtime.lastError) {}
+        if (chrome.runtime.lastError) { }
       });
-    } catch (_) {}
+    } catch (_) { }
 
     // 3. Focus iframe
     try {
       els.instagramFrame.focus();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Opens a detached floating companion window with Instagram Reels.
@@ -133,7 +135,7 @@ export function initReels(els: PopupElements): ReelsController {
       setTimeout(() => {
         try {
           els.instagramFrame.focus();
-        } catch (_) {}
+        } catch (_) { }
       }, 300);
     }
   });
